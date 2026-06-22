@@ -479,7 +479,8 @@
 
     <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;margin-top:14px"><input type="checkbox" id="f_comprado" class="check"> <span id="f_compradoLabel">Já comprado</span></label>
     <div class="modal-actions">
-      <button class="btn btn-ghost" id="itemDeleteBtn" onclick="deleteCurrentItem()" style="margin-right:auto">🗑️ Excluir</button>
+      <button class="btn btn-ghost" id="itemDeleteBtn" onclick="deleteCurrentItem()">🗑️ Excluir</button>
+      <button class="btn btn-ghost" id="itemDupBtn" onclick="duplicateItem(editingId)" style="margin-right:auto">⧉ Duplicar</button>
       <button class="btn btn-ghost" onclick="closeModal('itemOverlay')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveItemModal()">Salvar</button>
     </div>
@@ -517,7 +518,7 @@
    Hoje: localStorage. Para hospedar/sincronizar online, troque
    só estas duas funções por chamadas fetch() a um backend.
    ============================================================ */
-const BUILD='0622-cleanup';         // marcador de versão (pra confirmar deploy/cache)
+const BUILD='0622-duplicar';         // marcador de versão (pra confirmar deploy/cache)
 const STORAGE_KEY='enxoval-bebe-v1';   // mantém a chave; migramos a forma por dentro
 const DOC_ID='pedro';                  // documento compartilhado do casal na nuvem
 const SUPA=(window.SUPA||{url:'',anonKey:''});
@@ -1041,7 +1042,7 @@ function listHTML(){
       <td>${whenBadge(it)}</td>
       <td class="num"><input class="cellinput qty" type="number" min="0" value="${it.qtdComprada||''}" placeholder="0" onchange="updField('${it.id}','qtdComprada',this.value)"></td>
       <td class="num"><input class="cellinput money" type="number" min="0" step="0.01" value="${it.valorReal||''}" placeholder="0,00" onchange="updField('${it.id}','valorReal',this.value)"></td>
-      <td><button class="btn btn-icon" onclick="openItemModal('${it.id}')" title="Editar">✏️</button></td></tr>`;
+      <td style="white-space:nowrap"><button class="btn btn-icon" onclick="duplicateItem('${it.id}')" title="Duplicar">⧉</button><button class="btn btn-icon" onclick="openItemModal('${it.id}')" title="Editar">✏️</button></td></tr>`;
   }).join('');
   const desktop=`<div class="tablewrap desktop-table"><table><thead><tr>
     <th>OK</th><th>Item</th><th>Prior.</th><th class="num">Alvo</th><th class="num">Preço un</th><th class="num">Subtotal</th>
@@ -1052,7 +1053,7 @@ function listHTML(){
       <div class="mc-top"><input type="checkbox" class="check" ${it.comprado?'checked':''} onchange="toggleDone('${it.id}',this.checked)">
         <div class="mc-title"><div class="itemname" onclick="openItemModal('${it.id}')">${esc(it.item||'—')}</div>
           <div class="mc-meta">${it.categoria?`<span class="badge b-cat">${esc(it.categoria)}</span>`:''}<span class="badge b-${p}">${p[0].toUpperCase()+p.slice(1)}</span>${whenBadge(it)}${ind(it)}</div></div>
-        <button class="btn btn-icon" onclick="openItemModal('${it.id}')">✏️</button></div>
+        <button class="btn btn-icon" onclick="duplicateItem('${it.id}')" title="Duplicar">⧉</button><button class="btn btn-icon" onclick="openItemModal('${it.id}')">✏️</button></div>
       <div class="mc-meta" style="margin-top:8px;color:var(--muted);font-size:.84rem">Alvo ${it.qtdAlvo||0} · ${it.precoEstimado?fmtBRL(it.precoEstimado)+'/un':'sem preço'} · Subtotal <b>${fmtBRL(subtotal(it))}</b></div>
       <div class="mc-grid">
         <div><label>Qtd</label><input class="cellinput qty" style="max-width:none" type="number" min="0" value="${it.qtdComprada||''}" placeholder="0" onchange="updField('${it.id}','qtdComprada',this.value)"></div>
@@ -1080,11 +1081,11 @@ function openItemModal(id){
     get('f_comprarQuando').value=it.comprarQuando; get('f_qtdComprada').value=it.qtdComprada||'';
     get('f_valorReal').value=it.valorReal||''; get('f_presentePor').value=it.presentePor; get('f_comprado').checked=it.comprado;
     modalLojas=JSON.parse(JSON.stringify(it.lojas||[]));
-    get('itemDeleteBtn').style.display='';
+    get('itemDeleteBtn').style.display=''; get('itemDupBtn').style.display='';
     if(!it.descricao) get('f_descricao').value=autoDescricao(it.item,it.categoria);  // sugere por contexto
   } else { get('itemModalTitle').textContent='Novo item';
     ['f_item','f_descricao','f_categoria','f_qtdAlvo','f_precoEstimado','f_comprarQuando','f_qtdComprada','f_valorReal','f_presentePor'].forEach(k=>get(k).value='');
-    get('f_prioridade').value='media'; get('f_comprado').checked=false; modalLojas=[]; get('itemDeleteBtn').style.display='none'; }
+    get('f_prioridade').value='media'; get('f_comprado').checked=false; modalLojas=[]; get('itemDeleteBtn').style.display='none'; get('itemDupBtn').style.display='none'; }
   renderLojas(); showModal('itemOverlay'); setTimeout(()=>get('f_item').focus(),50);
 }
 async function saveItemModal(){
@@ -1192,6 +1193,15 @@ function renderLojas(){
 }
 async function deleteCurrentItem(){ if(!editingId)return; if(!confirm('Excluir este item?'))return;
   LD().items=LD().items.filter(x=>x.id!==editingId); await persist(); closeModal('itemOverlay'); render(); toast('Item excluído'); }
+async function duplicateItem(id){
+  const arr=LD().items, i=arr.findIndex(x=>x.id===id); if(i<0) return;
+  const o=arr[i];
+  const copy=normalizeItem({ ...JSON.parse(JSON.stringify(o)), id:uid(),
+    item:(o.item||'Item')+' (cópia)', comprado:false, qtdComprada:0, valorReal:0,
+    createdAt:new Date().toISOString(), updatedAt:null });
+  arr.splice(i+1,0,copy);                 // insere logo depois do original
+  await persist(); closeModal('itemOverlay'); render(); openItemModal(copy.id); toast('Item duplicado ✓');
+}
 
 /* ---------------- IMPORTAÇÃO ---------------- */
 function openImport(){ resetImport(); document.getElementById('importStep2').classList.add('hidden'); showModal('importOverlay'); }

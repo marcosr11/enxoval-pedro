@@ -517,7 +517,7 @@
    Hoje: localStorage. Para hospedar/sincronizar online, troque
    só estas duas funções por chamadas fetch() a um backend.
    ============================================================ */
-const BUILD='0622-darkreader';         // marcador de versão (pra confirmar deploy/cache)
+const BUILD='0622-cleanup';         // marcador de versão (pra confirmar deploy/cache)
 const STORAGE_KEY='enxoval-bebe-v1';   // mantém a chave; migramos a forma por dentro
 const DOC_ID='pedro';                  // documento compartilhado do casal na nuvem
 const SUPA=(window.SUPA||{url:'',anonKey:''});
@@ -924,13 +924,8 @@ function listViewHTML(){
   }
   if(!L.items.length) return head+emptyHTML();
   return head + dashboardHTML() + categoriesHTML()
-    + `<div class="tabs">
-        <button class="tab ${ui.listTab==='lista'?'active':''}" onclick="setListTab('lista')">📝 Lista</button>
-        <button class="tab ${ui.listTab==='presentes'?'active':''}" onclick="setListTab('presentes')">🎁 ${curList==='cha'?'Quem traz':'Presentes'} & lojas</button>
-      </div>`
-    + (ui.listTab==='presentes'?giftsHTML():(toolbarHTML()+`<div id="listArea">`+listHTML()+`</div>`));
+    + toolbarHTML() + `<div id="listArea">` + listHTML() + `</div>`;
 }
-function setListTab(t){ ui.listTab=t; render(); animateView(); }
 function setFesta(v){ state.cha.festaDate=v; persist(); render(); }
 async function clearList(){
   const c=cfg(), n=LD().items.length;
@@ -1046,12 +1041,11 @@ function listHTML(){
       <td>${whenBadge(it)}</td>
       <td class="num"><input class="cellinput qty" type="number" min="0" value="${it.qtdComprada||''}" placeholder="0" onchange="updField('${it.id}','qtdComprada',this.value)"></td>
       <td class="num"><input class="cellinput money" type="number" min="0" step="0.01" value="${it.valorReal||''}" placeholder="0,00" onchange="updField('${it.id}','valorReal',this.value)"></td>
-      <td><input class="cellinput" value="${esc(it.presentePor)}" placeholder="—" onchange="updField('${it.id}','presentePor',this.value)"></td>
       <td><button class="btn btn-icon" onclick="openItemModal('${it.id}')" title="Editar">✏️</button></td></tr>`;
   }).join('');
   const desktop=`<div class="tablewrap desktop-table"><table><thead><tr>
     <th>OK</th><th>Item</th><th>Prior.</th><th class="num">Alvo</th><th class="num">Preço un</th><th class="num">Subtotal</th>
-    <th>Quando</th><th class="num">Qtd</th><th class="num">Valor pago</th><th>${esc(c.presente)}</th><th></th>
+    <th>Quando</th><th class="num">Qtd</th><th class="num">Valor pago</th><th></th>
     </tr></thead><tbody>${rows}</tbody></table></div>`;
   const cards=arr.map(it=>{ const p=it.prioridade;
     return `<div class="mobile-card ${it.comprado?'mc-done':''}">
@@ -1062,25 +1056,9 @@ function listHTML(){
       <div class="mc-meta" style="margin-top:8px;color:var(--muted);font-size:.84rem">Alvo ${it.qtdAlvo||0} · ${it.precoEstimado?fmtBRL(it.precoEstimado)+'/un':'sem preço'} · Subtotal <b>${fmtBRL(subtotal(it))}</b></div>
       <div class="mc-grid">
         <div><label>Qtd</label><input class="cellinput qty" style="max-width:none" type="number" min="0" value="${it.qtdComprada||''}" placeholder="0" onchange="updField('${it.id}','qtdComprada',this.value)"></div>
-        <div><label>Valor pago</label><input class="cellinput money" style="max-width:none" type="number" min="0" step="0.01" value="${it.valorReal||''}" placeholder="0,00" onchange="updField('${it.id}','valorReal',this.value)"></div>
-        <div style="grid-column:1/-1"><label>${esc(c.presente)}</label><input class="cellinput" value="${esc(it.presentePor)}" placeholder="—" onchange="updField('${it.id}','presentePor',this.value)"></div></div></div>`;
+        <div><label>Valor pago</label><input class="cellinput money" style="max-width:none" type="number" min="0" step="0.01" value="${it.valorReal||''}" placeholder="0,00" onchange="updField('${it.id}','valorReal',this.value)"></div></div></div>`;
   }).join('');
   return countBar+desktop+`<div class="mobile-list">${cards}</div>`;
-}
-function giftsHTML(){
-  const L=LD(), c=cfg(), dados=L.items.filter(i=>i.presentePor&&i.presentePor.trim()), map={};
-  for(const it of dados){ const k=it.presentePor.trim(); (map[k]=map[k]||{itens:[],total:0}); map[k].itens.push(it); map[k].total+=it.comprado?(Number(it.valorReal)||0):0; }
-  const keys=Object.keys(map).sort(), falta=L.items.filter(i=>!i.comprado);
-  let html='';
-  if(keys.length){ html+=`<div class="giftgrid">`+keys.map(k=>{const g=map[k];
-    return `<div class="giftcard"><h3>🎁 ${esc(k)} <small>${g.total?fmtBRL(g.total):g.itens.length+' itens'}</small></h3>
-      <ul>${g.itens.map(it=>`<li><span>${esc(it.item)}</span><span>${it.valorReal?fmtBRL(it.valorReal):(it.comprado?'✓':'')}</span></li>`).join('')}</ul></div>`;
-  }).join('')+`</div>`; }
-  else html+=`<div class="empty" style="padding:36px"><div class="big">🎁</div><p>Preencha "${esc(c.presente)}" nos itens e eles aparecem agrupados aqui.</p></div>`;
-  if(falta.length) html+=`<div class="panel" style="margin-top:18px"><h2>🛒 Ainda falta (${falta.length})</h2>
-    <div class="catgrid">${falta.slice(0,40).map(it=>`<div class="catrow"><div class="catname"><span>${esc(it.item)}</span><span>${whenBadge(it)||''}</span></div></div>`).join('')}</div>
-    ${falta.length>40?`<div class="hint" style="color:var(--muted);font-size:.8rem;margin-top:8px">+ ${falta.length-40} itens…</div>`:''}</div>`;
-  return html;
 }
 
 /* ---------------- AÇÕES lista ---------------- */

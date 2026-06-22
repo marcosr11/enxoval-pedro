@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pedro 💙 — Enxoval, Chá & Gestação</title>
+<script src="vendor/xlsx.full.min.js" onerror="window.__xlsxLocalFailed=true"></script>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="window.__supaFailed=true"></script>
+<style>
+  :root{
+    --azul:#4f86f7; --azul-esc:#2f63d6; --azul-claro:#e9f1ff; --azul-bb:#bcd5ff;
+    --bg:#f3f7fd; --card:#ffffff; --txt:#1d2b41; --muted:#7c8aa3; --linha:#e8eefb;
+    --ok:#1faf6c; --ok-bg:#e3f7ee; --aviso:#e9920c; --aviso-bg:#fdf1dc;
+    --perigo:#e5604d; --perigo-bg:#fce7e3; --alta:#e5604d; --media:#e9920c; --baixa:#5aa9e6;
+    --sombra:0 6px 24px rgba(47,99,214,.10); --sombra-sm:0 2px 10px rgba(47,99,214,.08);
+    --sidebar-bg:linear-gradient(180deg,#eaf2ff,#f3f7fd 320px); --inp:#fff; --th-head:#fafcff; --done-bg:#fbfefc;
+    color-scheme:light;
+  }
+  /* ---- Modo escuro (paleta neutra; as cores de destaque vêm do JS) ---- */
+  [data-theme="dark"]{
+    --bg:#0f1623; --card:#1a2333; --txt:#e8eef7; --muted:#94a3b8; --linha:#2a3547;
+    --ok:#2bd07f; --ok-bg:#143728; --aviso:#f0a93c; --aviso-bg:#3a2e15; --perigo:#f0776a; --perigo-bg:#3a1f1b;
+    --sombra:0 6px 24px rgba(0,0,0,.42); --sombra-sm:0 2px 10px rgba(0,0,0,.34);
+    --sidebar-bg:#141d2c; --inp:#0f1623; --th-head:#141d2c; --done-bg:#172235;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--txt);min-height:100vh;line-height:1.45;-webkit-font-smoothing:antialiased;
+    transition:background .2s,color .2s;
+  }
+  a{color:var(--azul-esc)}
+  button,.btn{font:inherit;cursor:pointer;border:none;border-radius:11px;padding:10px 15px;font-weight:650;
+    font-size:.9rem;display:inline-flex;align-items:center;gap:7px;transition:.15s;white-space:nowrap}
+  .btn-primary{background:var(--azul);color:#fff;box-shadow:var(--sombra-sm)}
+  .btn-primary:hover{background:var(--azul-esc)}
+  .btn-ghost{background:var(--card);color:var(--txt);box-shadow:var(--sombra-sm)}
+  .btn-ghost:hover{background:var(--azul-claro)}
+  .btn-soft{background:var(--azul-claro);color:var(--azul-esc)}
+  .btn-soft:hover{background:var(--azul-bb)}
+  .btn-sm{padding:6px 10px;font-size:.82rem;border-radius:9px}
+  .btn-icon{background:transparent;color:var(--muted);padding:6px;border-radius:8px}
+  .btn-icon:hover{background:var(--azul-claro);color:var(--azul-esc)}
+  input:focus,select:focus,button:focus-visible{outline:2px solid var(--azul-bb);outline-offset:1px}
+
+  /* ---- Layout com sidebar ---- */
+  .layout{display:flex;max-width:1320px;margin:0 auto;min-height:100vh}
+  .sidebar{width:236px;flex-shrink:0;padding:22px 14px;position:sticky;top:0;height:100vh;
+    display:flex;flex-direction:column;gap:4px;background:var(--sidebar-bg)}
+  .sb-brand{display:flex;align-items:center;gap:11px;padding:6px 8px 18px}
+  .sb-logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,var(--azul),var(--azul-esc));
+    display:grid;place-items:center;font-size:22px;box-shadow:var(--sombra-sm)}
+  .sb-brand b{font-size:1.05rem;font-weight:800;letter-spacing:-.02em;display:block}
+  .sb-brand span{font-size:.74rem;color:var(--muted)}
+  .navitem{display:flex;align-items:center;gap:11px;padding:11px 14px;border-radius:12px;font-weight:650;
+    color:var(--muted);cursor:pointer;width:100%;text-align:left;background:transparent;font-size:.94rem}
+  .navitem:hover{background:var(--azul-claro);color:var(--azul-esc)}
+  .navitem.active{background:var(--azul);color:#fff;box-shadow:var(--sombra-sm)}
+  .navitem .ic{font-size:1.18rem;width:22px;text-align:center}
+  .navitem small{display:block;font-size:.7rem;font-weight:600;opacity:.8}
+  .sb-spacer{flex:1}
+  .main{flex:1;min-width:0;padding:26px 26px 80px}
+
+  /* ---- Cabeçalho de view ---- */
+  .viewhead{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+  .viewhead h1{font-size:1.5rem;font-weight:800;letter-spacing:-.02em}
+  .viewhead .sub{color:var(--muted);font-size:.86rem;margin-top:2px}
+  .viewhead .spacer{flex:1}
+  .viewhead .actions{display:flex;gap:8px;flex-wrap:wrap}
+
+  /* ---- Cards / dashboard ---- */
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:18px}
+  .card{background:var(--card);border-radius:18px;padding:16px 17px;box-shadow:var(--sombra)}
+  .card .lbl{font-size:.74rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+  .card .val{font-size:1.5rem;font-weight:800;margin-top:4px;letter-spacing:-.02em}
+  .card .val small{font-size:.85rem;color:var(--muted);font-weight:600}
+  .card .hint{font-size:.78rem;color:var(--muted);margin-top:3px}
+  .card.accent{background:linear-gradient(135deg,var(--azul),var(--azul-esc));color:#fff}
+  .card.accent .lbl,.card.accent .hint,.card.accent .val small{color:rgba(255,255,255,.82)}
+  .bar{height:8px;border-radius:99px;background:var(--linha);overflow:hidden;margin-top:9px}
+  .bar > i{display:block;height:100%;border-radius:99px;background:var(--ok);transition:width .4s}
+  .card.accent .bar{background:rgba(255,255,255,.28)} .card.accent .bar > i{background:#fff}
+  .budget-row{display:flex;align-items:center;gap:6px;margin-top:2px}
+  .budget-row input{width:120px;border:1px solid var(--linha);background:var(--inp);color:var(--txt);
+    border-radius:8px;padding:5px 8px;font:inherit;font-weight:700;font-size:1rem}
+
+  .panel{background:var(--card);border-radius:18px;padding:18px 20px;box-shadow:var(--sombra);margin-bottom:18px}
+  .panel h2{font-size:1rem;font-weight:750;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px 22px}
+  .catrow .catname{display:flex;justify-content:space-between;font-size:.86rem;font-weight:600;margin-bottom:5px;color:var(--txt)}
+  .catrow .catname span:last-child{color:var(--muted);font-weight:600}
+  .panel,.card,.giftcard,.examitem,.modal,.mobile-card{color:var(--txt)}
+
+  /* ---- Hero gestação (Início) ---- */
+  .hero{background:linear-gradient(135deg,#5b8def,#2f63d6);color:#fff;border-radius:22px;padding:26px 28px;
+    box-shadow:var(--sombra);margin-bottom:18px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+  .hero-emoji{font-size:54px;line-height:1}
+  .hero-body{flex:1;min-width:220px}
+  .hero-sub{font-size:.9rem;opacity:.9;font-weight:600}
+  .hero-big{font-size:2.5rem;font-weight:800;letter-spacing:-.02em;margin-top:2px}
+  .hero-big span{font-size:1.1rem;font-weight:600;opacity:.85}
+  .hero .bar{height:9px}
+
+  /* ---- Sub-abas (Checklist / Presentes) ---- */
+  .tabs{display:flex;gap:6px;margin-bottom:14px}
+  .tab{background:var(--card);color:var(--muted);padding:9px 16px;border-radius:11px;font-weight:700;box-shadow:var(--sombra-sm)}
+  .tab.active{background:var(--azul-claro);color:var(--azul-esc)}
+
+  .toolbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .search{flex:1;min-width:180px;position:relative}
+  .search input{width:100%;padding:10px 12px 10px 36px;border:1px solid var(--linha);border-radius:11px;font:inherit;background:var(--inp);color:var(--txt)}
+  .search::before{content:"🔍";position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:.85rem;opacity:.6}
+  select.filter{padding:10px 12px;border:1px solid var(--linha);border-radius:11px;font:inherit;background:var(--inp);color:var(--txt)}
+
+  .tablewrap{background:var(--card);border-radius:18px;box-shadow:var(--sombra);overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  thead th{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-align:left;
+    padding:13px 12px;background:var(--th-head);border-bottom:1px solid var(--linha);font-weight:700;white-space:nowrap}
+  tbody td{padding:11px 12px;border-bottom:1px solid var(--linha);font-size:.9rem;vertical-align:middle}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr.done{background:var(--done-bg)}
+  tbody tr.done .itemname{text-decoration:line-through;color:var(--muted)}
+  .itemname{font-weight:650}
+  .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .cellinput{width:100%;border:1px solid transparent;border-radius:8px;padding:6px 7px;font:inherit;background:var(--inp);color:var(--txt)}
+  .cellinput:hover{border-color:var(--azul-bb)}
+  .cellinput.money,.cellinput.qty{text-align:right;max-width:96px}
+  .check{width:22px;height:22px;accent-color:var(--ok);cursor:pointer}
+
+  .badge{display:inline-block;padding:3px 9px;border-radius:99px;font-size:.74rem;font-weight:700}
+  .b-cat{background:var(--azul-claro);color:var(--azul-esc)}
+  .b-alta{background:var(--perigo-bg);color:var(--perigo)}
+  .b-media{background:var(--aviso-bg);color:var(--aviso)}
+  .b-baixa{background:var(--azul-claro);color:var(--baixa)}
+  .when{font-size:.82rem;color:var(--muted);white-space:nowrap}
+  .b-atrasado{background:var(--perigo-bg);color:var(--perigo)}
+  .b-semana{background:var(--aviso-bg);color:var(--aviso)}
+
+  .giftgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+  .giftcard{background:var(--card);border-radius:16px;box-shadow:var(--sombra-sm);padding:16px}
+  .giftcard h3{font-size:.98rem;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .giftcard h3 small{color:var(--ok);font-weight:800}
+  .giftcard ul{list-style:none;font-size:.86rem}
+  .giftcard li{padding:5px 0;border-top:1px dashed var(--linha);display:flex;justify-content:space-between;gap:8px}
+  .giftcard li:first-child{border-top:none}
+
+  /* ---- Pedro (form) ---- */
+  .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .field{margin-bottom:0}
+  .field label{display:block;font-size:.8rem;font-weight:650;color:var(--muted);margin-bottom:5px}
+  .field input,.field select,.field textarea{width:100%;padding:10px 12px;border:1px solid var(--linha);border-radius:11px;font:inherit;background:var(--inp);color:var(--txt)}
+  .examrow{display:grid;grid-template-columns:1fr 130px 100px 40px;gap:8px;align-items:center;margin-bottom:8px}
+  .examlist .examitem{display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid var(--linha);
+    border-radius:12px;margin-bottom:8px}
+  .examlist .examitem .ed{font-weight:700}
+  .examlist .examitem .dt{color:var(--azul-esc);font-weight:700;font-size:.86rem;white-space:nowrap}
+  .examlist .examitem .cd{margin-left:auto;font-size:.78rem;color:var(--muted)}
+
+  .empty{text-align:center;padding:56px 20px;background:var(--card);border-radius:20px;box-shadow:var(--sombra)}
+  .empty .big{font-size:52px;margin-bottom:6px}
+  .empty h2{font-size:1.25rem;margin-bottom:6px}
+  .empty p{color:var(--muted);max-width:460px;margin:0 auto 18px}
+  .empty .actions{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
+
+  .overlay{position:fixed;inset:0;background:rgba(20,40,80,.4);backdrop-filter:blur(3px);display:none;
+    align-items:flex-start;justify-content:center;padding:40px 16px;z-index:50;overflow:auto}
+  .overlay.show{display:flex}
+  .modal{background:var(--card);border-radius:20px;box-shadow:0 20px 60px rgba(20,40,80,.3);width:100%;max-width:620px;padding:24px;animation:pop .2s ease}
+  .modal.wide{max-width:760px}
+  @keyframes pop{from{transform:translateY(12px) scale(.98);opacity:0}to{transform:none;opacity:1}}
+  .modal h2{font-size:1.2rem;margin-bottom:4px}
+  .modal .desc{color:var(--muted);font-size:.88rem;margin-bottom:18px}
+  .modal .field{margin-bottom:13px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+  .modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}
+  .modal-close{float:right;font-size:1.3rem;color:var(--muted);background:none;padding:0 4px;margin-top:-6px}
+  .maptable{width:100%;border-collapse:collapse;margin:6px 0 4px}
+  .maptable td{padding:7px 6px;border-bottom:1px solid var(--linha);font-size:.88rem}
+  .maptable td:first-child{font-weight:650;width:46%}
+  .maptable select{width:100%;padding:7px 9px;border:1px solid var(--linha);border-radius:9px;font:inherit;background:var(--inp);color:var(--txt)}
+  .radioline{display:flex;gap:18px;margin:14px 0 4px;font-size:.9rem}
+  .radioline label{display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:600}
+  .preview{font-size:.8rem;color:var(--muted);margin-top:8px}
+  .map-detected{font-size:.74rem;color:var(--ok);font-weight:700}
+  .stack-btn{width:100%;justify-content:flex-start;padding:11px 14px;margin-bottom:6px}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--txt);
+    color:#fff;padding:11px 20px;border-radius:12px;font-weight:600;font-size:.9rem;box-shadow:0 8px 30px rgba(0,0,0,.25);
+    transition:.25s;z-index:90;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  [data-theme="dark"] .toast{background:#243049;color:#fff}
+  /* ---- Aparência (tema & cores) ---- */
+  .seg{display:flex;gap:8px}
+  .segbtn{flex:1;justify-content:center;background:var(--azul-claro);color:var(--azul-esc);padding:12px;font-weight:700;border-radius:12px}
+  .segbtn.active{background:var(--azul);color:#fff}
+  .swatches{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .swatch{width:40px;height:40px;border-radius:12px;border:3px solid transparent;cursor:pointer;padding:0;box-shadow:var(--sombra-sm);position:relative}
+  .swatch.active{border-color:var(--txt)}
+  .swatch.custom{display:grid;place-items:center;background:conic-gradient(#f0764f,#f59e0b,#2bd07f,#0ea5e9,#4f86f7,#7c5cff,#ec4899,#f0764f)}
+  .swatch.custom input{opacity:0;position:absolute;inset:0;cursor:pointer;width:100%;height:100%}
+  .swatch.custom span{font-size:16px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+  .hidden{display:none!important}
+  .mobile-card{display:none}
+
+  @media(max-width:860px){
+    .layout{flex-direction:column}
+    .sidebar{width:auto;height:auto;position:sticky;top:0;z-index:20;flex-direction:row;overflow-x:auto;gap:6px;
+      padding:10px;box-shadow:var(--sombra-sm);background:var(--card)}
+    .sb-brand,.sb-spacer{display:none}
+    .navitem{flex-direction:column;gap:3px;font-size:.72rem;padding:7px 12px;white-space:nowrap}
+    .navitem .ic{font-size:1.3rem} .navitem small{display:none}
+    .main{padding:16px 13px 80px}
+    .formgrid,.grid2{grid-template-columns:1fr}
+    .desktop-table{display:none}
+    .mobile-list .mobile-card{display:block;background:var(--card);border-radius:16px;box-shadow:var(--sombra-sm);padding:14px;margin-bottom:11px}
+    .mc-top{display:flex;align-items:flex-start;gap:10px}
+    .mc-title{flex:1}.mc-title .itemname{font-size:1rem}
+    .mc-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+    .mc-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+    .mc-grid label{font-size:.72rem;color:var(--muted);font-weight:650;display:block;margin-bottom:3px}
+    .mc-done .itemname{text-decoration:line-through;color:var(--muted)}
+    .examrow{grid-template-columns:1fr 1fr;}
+    .viewhead h1{font-size:1.3rem}
+  }
+
+  /* ============================================================
+     POLISH — microinterações, profundidade e navegação viva
+     (apenas visual; nenhuma lógica alterada)
+     ============================================================ */
+  body{ background:
+    radial-gradient(1100px 460px at 78% -12%, color-mix(in srgb,var(--azul) 12%, transparent), transparent),
+    var(--bg); }
+  [data-theme="dark"] body{ background:
+    radial-gradient(1100px 460px at 78% -12%, color-mix(in srgb,var(--azul) 22%, transparent), transparent),
+    var(--bg); }
+
+  /* transição suave nos elementos interativos */
+  .card,.panel,.giftcard,.navitem,.btn,button,.tab,.examitem,.swatch,.segbtn,.badge,
+  tbody tr,.mobile-card,.sb-logo,.check,.cellinput{
+    transition:transform .2s cubic-bezier(.2,.7,.2,1), box-shadow .2s ease, background .2s ease, color .15s ease, border-color .15s ease; }
+
+  /* hover de profundidade nos cards */
+  .card{will-change:transform}
+  .card:hover{transform:translateY(-3px); box-shadow:0 16px 38px rgba(47,99,214,.16)}
+  .panel:hover{box-shadow:0 14px 32px rgba(47,99,214,.12)}
+  .giftcard:hover{transform:translateY(-3px); box-shadow:0 14px 30px rgba(47,99,214,.16)}
+  [data-theme="dark"] .card:hover,[data-theme="dark"] .panel:hover,[data-theme="dark"] .giftcard:hover{box-shadow:0 16px 40px rgba(0,0,0,.55)}
+  .card.accent{box-shadow:0 14px 34px color-mix(in srgb,var(--azul) 34%, transparent)}
+  .card.accent:hover{transform:translateY(-3px); box-shadow:0 20px 46px color-mix(in srgb,var(--azul) 44%, transparent)}
+
+  /* botões com peso e resposta ao toque */
+  .btn-primary{background:linear-gradient(135deg, color-mix(in srgb,var(--azul) 92%,#fff 8%), var(--azul-esc));
+    box-shadow:0 6px 18px color-mix(in srgb,var(--azul) 42%, transparent)}
+  .btn-primary:hover{box-shadow:0 10px 26px color-mix(in srgb,var(--azul) 55%, transparent)}
+  .btn:hover,button:hover{transform:translateY(-1px)}
+  .btn:active,button:active{transform:translateY(0) scale(.96)}
+  .btn-icon:hover{transform:none}
+
+  /* SIDEBAR — navegação irresistível */
+  .navitem{position:relative;overflow:hidden;z-index:0}
+  .navitem .ic{transition:transform .3s cubic-bezier(.3,1.5,.5,1)}
+  .navitem::before{content:"";position:absolute;left:0;top:50%;width:4px;height:60%;border-radius:0 5px 5px 0;
+    background:var(--azul);transform:translateY(-50%) scaleY(0);transform-origin:center;transition:transform .28s cubic-bezier(.2,.85,.25,1)}
+  .navitem:not(.active):hover{background:var(--azul-claro);color:var(--azul-esc);transform:translateX(3px)}
+  .navitem:not(.active):hover::before{transform:translateY(-50%) scaleY(1)}
+  .navitem:hover .ic{transform:scale(1.18) rotate(-5deg)}
+  .navitem.active{background:linear-gradient(135deg,var(--azul),var(--azul-esc));
+    box-shadow:0 10px 24px color-mix(in srgb,var(--azul) 42%, transparent)}
+  .navitem.active .ic{transform:scale(1.05)}
+  .sb-brand:hover .sb-logo{transform:rotate(-8deg) scale(1.08)}
+
+  /* barras de progresso — gradiente + brilho passando */
+  .bar{background:color-mix(in srgb,var(--muted) 18%, transparent)}
+  .bar>i{position:relative;overflow:hidden;
+    background:linear-gradient(90deg,var(--ok),color-mix(in srgb,var(--ok) 60%,#9bf3c8))}
+  .card.accent .bar>i{background:#fff}
+  .bar>i::after{content:"";position:absolute;inset:0;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);
+    transform:translateX(-100%);animation:shine 2.6s ease-in-out infinite}
+  @keyframes shine{0%{transform:translateX(-100%)}55%,100%{transform:translateX(260%)}}
+
+  /* HERO — cor do tema + brilho + flutuação */
+  .hero{position:relative;overflow:hidden;background:linear-gradient(135deg,var(--azul),var(--azul-esc))}
+  .hero::after{content:"";position:absolute;top:-45%;right:-8%;width:360px;height:360px;border-radius:50%;
+    background:radial-gradient(circle,rgba(255,255,255,.22),transparent 70%);pointer-events:none}
+  .hero-emoji{animation:floaty 4.2s ease-in-out infinite}
+  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+  /* linhas da tabela e cards mobile */
+  tbody tr:hover{background:var(--azul-claro)}
+  [data-theme="dark"] tbody tr:hover{background:color-mix(in srgb,var(--azul) 16%, var(--card))}
+  .mobile-card:active{transform:scale(.99)}
+
+  /* checkbox com "pop" ao marcar */
+  .check:hover{transform:scale(1.14)}
+  .check:checked{animation:pop2 .3s}
+  @keyframes pop2{0%{transform:scale(.7)}55%{transform:scale(1.22)}100%{transform:scale(1)}}
+
+  /* abas */
+  .tab:hover{transform:translateY(-1px)}
+  .tab.active{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--azul) 30%, transparent)}
+
+  /* swatches de cor */
+  .swatch:hover{transform:translateY(-2px) scale(1.06)}
+  .segbtn:hover{transform:translateY(-1px)}
+
+  /* foco com brilho da cor principal */
+  .field input:focus,.field select:focus,.search input:focus,select.filter:focus,
+  .cellinput:focus,.budget-row input:focus,.examrow input:focus,.maptable select:focus{
+    outline:none;border-color:var(--azul);box-shadow:0 0 0 3px color-mix(in srgb,var(--azul) 22%, transparent)}
+
+  /* modal e overlay mais cinematográficos */
+  .overlay.show{animation:fadeIn .2s ease}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .modal{box-shadow:0 30px 90px rgba(8,18,45,.45)}
+  @keyframes pop{from{transform:translateY(16px) scale(.96);opacity:0}to{transform:none;opacity:1}}
+
+  /* scrollbar discreta */
+  *::-webkit-scrollbar{width:11px;height:11px}
+  *::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--muted) 42%, transparent);
+    border-radius:99px;border:3px solid transparent;background-clip:padding-box}
+  *::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--muted) 70%, transparent);background-clip:padding-box}
+
+  /* ENTRADA das views (só ao navegar — não pisca ao editar) */
+  @keyframes viewIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  @keyframes cardIn{from{opacity:0;transform:translateY(14px) scale(.99)}to{opacity:1;transform:none}}
+  #app.vin{animation:viewIn .4s cubic-bezier(.2,.75,.25,1)}
+  #app.vin .cards>.card{animation:cardIn .5s cubic-bezier(.2,.8,.25,1) backwards}
+  #app.vin .cards>.card:nth-child(1){animation-delay:.04s}
+  #app.vin .cards>.card:nth-child(2){animation-delay:.09s}
+  #app.vin .cards>.card:nth-child(3){animation-delay:.14s}
+  #app.vin .cards>.card:nth-child(4){animation-delay:.19s}
+  #app.vin .panel{animation:cardIn .55s .12s cubic-bezier(.2,.8,.25,1) backwards}
+  #app.vin .tablewrap,#app.vin .giftgrid,#app.vin .hero{animation:viewIn .5s .14s cubic-bezier(.2,.8,.25,1) backwards}
+
+  /* Tela de login (modo nuvem) */
+  .login-screen{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;padding:24px;
+    background:radial-gradient(900px 520px at 70% -10%, color-mix(in srgb,var(--azul) 30%, transparent), var(--bg))}
+  .login-screen.show{display:flex;animation:fadeIn .25s ease}
+  .login-card{background:var(--card);color:var(--txt);border-radius:22px;box-shadow:0 24px 60px rgba(8,18,45,.3);max-width:400px;width:100%;padding:32px 28px;text-align:center}
+  .login-logo{width:62px;height:62px;border-radius:18px;margin:0 auto 14px;background:linear-gradient(135deg,var(--azul),var(--azul-esc));display:grid;place-items:center;font-size:31px;box-shadow:var(--sombra-sm)}
+  .login-card h2{font-size:1.3rem;margin-bottom:6px}
+  .login-card p{color:var(--muted);font-size:.88rem;margin-bottom:18px;line-height:1.5}
+  .login-card input{width:100%;padding:12px 14px;border:1px solid var(--linha);border-radius:12px;font:inherit;background:var(--inp);color:var(--txt);margin-bottom:12px}
+  .login-card .btn{width:100%;justify-content:center}
+  .login-msg{margin-top:14px;font-size:.86rem;color:var(--ok);font-weight:600;line-height:1.4}
+
+  /* item clicável */
+  .itemname{cursor:pointer}
+  .mini-tag{font-size:.7rem;color:var(--muted);margin-left:6px;white-space:nowrap;vertical-align:middle}
+  td.item-cell:hover{background:var(--azul-claro)}
+  td.item-cell:hover .itemname,.mc-title .itemname:hover{color:var(--azul-esc);text-decoration:underline;text-underline-offset:2px}
+  .field textarea{resize:vertical;min-height:64px;line-height:1.5}
+
+  /* LOJAS MONITORADAS — campo destacado */
+  .lojas-box{border:2px dashed var(--azul-bb);background:color-mix(in srgb,var(--azul) 7%, var(--card));
+    border-radius:16px;padding:15px;margin:8px 0 4px}
+  .lojas-title{font-weight:750;font-size:.94rem;color:var(--azul-esc);display:flex;flex-direction:column;margin-bottom:12px}
+  .lojas-title span{font-weight:500;font-size:.76rem;color:var(--muted);margin-top:2px}
+  .loja{background:var(--card);border-radius:13px;padding:12px 13px;margin-bottom:10px;box-shadow:var(--sombra-sm);
+    border:1px solid var(--linha)}
+  .loja-head{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .loja-head a{font-weight:700;text-decoration:none;color:var(--azul-esc);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:80%}
+  .loja-head a:hover{text-decoration:underline}
+  .loja-head .rm{margin-left:auto;flex-shrink:0}
+  .loja-price{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .loja-price .big{font-size:1.25rem;font-weight:800}
+  .delta{font-size:.76rem;font-weight:800;padding:3px 9px;border-radius:99px;white-space:nowrap}
+  .delta.down{background:var(--ok-bg);color:var(--ok)}
+  .delta.up{background:var(--perigo-bg);color:var(--perigo)}
+  .delta.eq{background:var(--azul-claro);color:var(--muted)}
+  .loja-hist{font-size:.74rem;color:var(--muted);margin-top:7px;word-break:break-word}
+  .loja-add{display:flex;gap:7px;margin-top:9px;align-items:center;flex-wrap:wrap}
+  .loja-add input{flex:1;min-width:140px;max-width:none;padding:8px 10px;border:1px solid var(--linha);border-radius:9px;font:inherit;background:var(--inp);color:var(--txt)}
+  .loja-form{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+  .loja-form input{min-width:0;padding:9px 11px;border:1px solid var(--linha);border-radius:10px;font:inherit;background:var(--inp);color:var(--txt)}
+  .loja-form .full{grid-column:1 / -1}
+  .lojas-box .btn-primary{box-shadow:0 3px 10px color-mix(in srgb,var(--azul) 28%, transparent)}
+  .loja:hover{box-shadow:var(--sombra)}
+
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  }
+</style>
+</head>
+<body>
+<!-- Tela de login (só aparece no modo nuvem) -->
+<div class="login-screen" id="loginOverlay">
+  <div class="login-card">
+    <div class="login-logo">💙</div>
+    <h2>Pedro — acesso do casal</h2>
+    <p>Entre com seu e-mail. Enviamos um <b>link mágico</b> (sem senha). Só os e-mails autorizados acessam os dados.</p>
+    <input id="loginEmail" type="email" placeholder="seu@email.com" autocomplete="email" onkeydown="if(event.key==='Enter')sendMagicLink()">
+    <button id="loginBtn" class="btn btn-primary" onclick="sendMagicLink()">Enviar link de acesso</button>
+    <div id="loginMsg" class="login-msg"></div>
+  </div>
+</div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main"><div id="app"></div></main>
+</div>
+
+<input type="file" id="sheetFile" accept=".xlsx,.xls,.csv" class="hidden">
+<input type="file" id="importJsonFile" accept=".json" class="hidden">
+
+<!-- Modal importação -->
+<div class="overlay" id="importOverlay">
+  <div class="modal wide">
+    <button class="modal-close" onclick="closeModal('importOverlay')">×</button>
+    <h2>Subir planilha</h2>
+    <div class="desc">Reconhecemos os cabeçalhos automaticamente (mesmo se houver título antes). Confira o de–para e ajuste se precisar.</div>
+    <div id="importStep1">
+      <div class="empty" style="box-shadow:none;background:var(--azul-claro);padding:36px 20px">
+        <div class="big">📊</div>
+        <p>Escolha sua planilha <b>.xlsx</b> ou <b>.csv</b>.</p>
+        <button class="btn btn-primary" onclick="document.getElementById('sheetFile').click()">Escolher arquivo</button>
+      </div>
+    </div>
+    <div id="importStep2" class="hidden">
+      <table class="maptable"><tbody id="mapBody"></tbody></table>
+      <div class="radioline">
+        <label><input type="radio" name="impmode" value="merge" checked> Adicionar aos itens atuais</label>
+        <label><input type="radio" name="impmode" value="replace"> Substituir tudo</label>
+      </div>
+      <div class="preview" id="importPreview"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal('importOverlay')">Cancelar</button>
+        <button class="btn btn-primary" onclick="confirmImport()">Importar itens</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal item -->
+<div class="overlay" id="itemOverlay">
+  <div class="modal wide">
+    <button class="modal-close" onclick="closeModal('itemOverlay')">×</button>
+    <h2 id="itemModalTitle">Novo item</h2>
+    <div class="desc">Detalhes do item, descrição e as lojas que vocês estão monitorando.</div>
+    <div class="field"><label>Item *</label><input id="f_item" placeholder="Ex.: Body manga longa RN" onchange="maybeSuggestDesc()"></div>
+    <div class="field">
+      <label>Descrição <button type="button" class="btn btn-soft btn-sm" style="float:right;margin-top:-3px" onclick="suggestDesc()">✨ Sugerir</button></label>
+      <textarea id="f_descricao" rows="3" placeholder="Pra que serve e por que importa (a gente sugere uma descrição automática)"></textarea>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Categoria</label><input id="f_categoria" list="catlist" placeholder="Ex.: Roupinhas"></div>
+      <div class="field"><label>Prioridade</label>
+        <select id="f_prioridade"><option value="alta">Alta</option><option value="media" selected>Média</option><option value="baixa">Baixa</option></select></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Qtd alvo</label><input id="f_qtdAlvo" type="number" min="0" step="1" placeholder="0"></div>
+      <div class="field"><label>Preço estimado (un)</label><input id="f_precoEstimado" type="number" min="0" step="0.01" placeholder="0,00"></div>
+    </div>
+    <div class="field"><label>Comprar quando</label><input id="f_comprarQuando" placeholder="Ex.: 15/08/2026 ou 'Julho'"></div>
+    <div class="grid2">
+      <div class="field"><label>Qtd comprada</label><input id="f_qtdComprada" type="number" min="0" step="1" placeholder="0"></div>
+      <div class="field"><label>Valor real pago (total)</label><input id="f_valorReal" type="number" min="0" step="0.01" placeholder="0,00"></div>
+    </div>
+    <div class="field"><label id="f_presenteLabel">Quem presenteou / loja</label><input id="f_presentePor" placeholder="Ex.: Vó Ana / Loja X"></div>
+
+    <!-- LOJAS MONITORADAS (campo destacado) -->
+    <div class="lojas-box">
+      <div class="lojas-title">🔗 Lojas que estamos monitorando
+        <span>Guarde o link e o preço de cada visita — a gente mostra se subiu ou caiu.</span></div>
+      <div id="lojasList"></div>
+      <div class="loja-form">
+        <input id="lj_nome" placeholder="Loja (ex.: Amazon)">
+        <input id="lj_preco" inputmode="decimal" placeholder="Preço visto (ex.: 1299,90)">
+        <input id="lj_url" class="full" placeholder="Colar link da loja">
+        <button type="button" class="btn btn-primary btn-sm full" onclick="addLoja()">＋ Adicionar loja</button>
+      </div>
+    </div>
+
+    <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;margin-top:14px"><input type="checkbox" id="f_comprado" class="check"> <span id="f_compradoLabel">Já comprado</span></label>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="itemDeleteBtn" onclick="deleteCurrentItem()" style="margin-right:auto">🗑️ Excluir</button>
+      <button class="btn btn-ghost" onclick="closeModal('itemOverlay')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveItemModal()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal backup -->
+<div class="overlay" id="backupOverlay">
+  <div class="modal" style="max-width:440px">
+    <button class="modal-close" onclick="closeModal('backupOverlay')">×</button>
+    <h2>Backup & dados</h2>
+    <div class="desc">Tudo fica salvo neste navegador. Exporte de vez em quando pra não perder e passar pro outro celular.</div>
+    <button class="btn btn-soft stack-btn" onclick="exportJSON()">⬇️ Exportar backup completo (JSON)</button>
+    <button class="btn btn-soft stack-btn" onclick="document.getElementById('importJsonFile').click()">⬆️ Importar backup (JSON)</button>
+    <button class="btn btn-soft stack-btn" onclick="exportCSV()">📄 Exportar lista atual para CSV</button>
+  </div>
+</div>
+
+<!-- Modal aparência -->
+<div class="overlay" id="appearanceOverlay">
+  <div class="modal" style="max-width:440px">
+    <button class="modal-close" onclick="closeModal('appearanceOverlay')">×</button>
+    <h2>🎨 Aparência</h2>
+    <div class="desc">Escolha o tema e a cor principal do app. Fica salvo junto com seus dados.</div>
+    <div id="appearanceBody"></div>
+  </div>
+</div>
+
+<datalist id="catlist"></datalist>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   CAMADA DE DADOS (Store) — única fronteira de persistência.
+   Hoje: localStorage. Para hospedar/sincronizar online, troque
+   só estas duas funções por chamadas fetch() a um backend.
+   ============================================================ */
+const STORAGE_KEY='enxoval-bebe-v1';   // mantém a chave; migramos a forma por dentro
+const DOC_ID='pedro';                  // documento compartilhado do casal na nuvem
+const SUPA=(window.SUPA||{url:'',anonKey:''});
+const CLOUD=!!(SUPA.url && SUPA.anonKey && window.supabase && !window.__supaFailed);
+let sb=null, session=null, realtimeChan=null, pendingRemote=null, appStarted=false;
+
+/* cache local — sempre usado; vira offline-first quando há nuvem */
+const LocalStore={
+  load(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(raw) return migrate(JSON.parse(raw)); }catch(e){ console.warn('falha ao ler',e); } return blankState(); },
+  save(s){ localStorage.setItem(STORAGE_KEY,JSON.stringify(s)); }
+};
+function normalizeState(s){ s.enxoval.items=(s.enxoval.items||[]).map(normalizeItem); s.cha.items=(s.cha.items||[]).map(normalizeItem); return s; }
+
+/* ---- Nuvem (Supabase) ---- */
+async function cloudLoad(){
+  try{
+    const { data, error } = await sb.from('app_state').select('data').eq('id',DOC_ID).maybeSingle();
+    if(error) throw error;
+    if(data && data.data) { const s=migrate(data.data); LocalStore.save(s); return s; }
+    const local=LocalStore.load(); await cloudSave(local); return local;   // 1ª vez: sobe o que já existia
+  }catch(e){ console.warn('cloudLoad falhou — usando cache local',e); toast('Sem conexão — usando dados locais'); return LocalStore.load(); }
+}
+async function cloudSave(s){ const { error } = await sb.from('app_state').upsert({ id:DOC_ID, data:s, updated_at:s.updatedAt }); if(error) throw error; }
+function subscribeRealtime(){
+  if(!sb) return; if(realtimeChan){ sb.removeChannel(realtimeChan); realtimeChan=null; }
+  realtimeChan=sb.channel('app_state_'+DOC_ID)
+    .on('postgres_changes',{event:'*',schema:'public',table:'app_state',filter:'id=eq.'+DOC_ID}, payload=>{
+      const inc=payload.new && payload.new.data; if(!inc) return;
+      if(inc.updatedAt && inc.updatedAt===state.updatedAt) return;        // eco do nosso próprio save
+      const fresh=normalizeState(migrate(inc)); LocalStore.save(fresh);
+      if(document.querySelector('.overlay.show')) pendingRemote=fresh;    // não atrapalha edição aberta
+      else { state=fresh; applyTheme(); render(); toast('Sincronizado 🔄'); }
+    }).subscribe();
+}
+const THEME_DEFAULT={ mode:'light', accent:'#4f86f7' };
+function blankState(){
+  return { version:2,
+    baby:{ nome:'Pedro', gestRefDate:'', gestWeeks:0, gestDays:0, dppOverride:'', exames:[] },
+    enxoval:{ items:[], budget:0 },
+    cha:{ items:[], budget:0, festaDate:'' },
+    theme:{...THEME_DEFAULT}, updatedAt:null };
+}
+/* migração: v1 tinha {items, budget} no topo -> vira enxoval */
+function migrate(s){
+  const base=blankState();
+  if(!s) return base;
+  if(s.version>=2){
+    return { version:2,
+      baby:Object.assign(base.baby, s.baby||{}),
+      enxoval:{ items:(s.enxoval&&s.enxoval.items)||[], budget:(s.enxoval&&s.enxoval.budget)||0 },
+      cha:{ items:(s.cha&&s.cha.items)||[], budget:(s.cha&&s.cha.budget)||0, festaDate:(s.cha&&s.cha.festaDate)||'' },
+      theme:Object.assign({...THEME_DEFAULT}, s.theme||{}),
+      updatedAt:s.updatedAt||null };
+  }
+  // v1
+  base.enxoval.items=(s.items||[]); base.enxoval.budget=s.budget||0;
+  base.updatedAt=s.updatedAt||null;
+  return base;
+}
+/* ---------- Tema & cores ---------- */
+function hexToRgb(h){ h=String(h||'').replace('#',''); if(h.length===3)h=h.split('').map(c=>c+c).join(''); const n=parseInt(h,16)||0; return {r:(n>>16)&255,g:(n>>8)&255,b:n&255}; }
+function rgbToHex(r,g,b){ return '#'+[r,g,b].map(x=>Math.max(0,Math.min(255,Math.round(x))).toString(16).padStart(2,'0')).join(''); }
+function mix(hex,target,amt){ const a=hexToRgb(hex),b=hexToRgb(target); return rgbToHex(a.r+(b.r-a.r)*amt,a.g+(b.g-a.g)*amt,a.b+(b.b-a.b)*amt); }
+function applyTheme(){
+  const t=state.theme||THEME_DEFAULT, root=document.documentElement, acc=t.accent||THEME_DEFAULT.accent;
+  root.dataset.theme=t.mode||'light';
+  root.style.setProperty('--azul',acc);
+  if((t.mode||'light')==='dark'){
+    root.style.setProperty('--azul-esc', mix(acc,'#ffffff',0.18));
+    root.style.setProperty('--azul-bb', mix(acc,'#ffffff',0.30));
+    root.style.setProperty('--azul-claro', mix(acc,'#1a2333',0.80));
+  } else {
+    root.style.setProperty('--azul-esc', mix(acc,'#000000',0.22));
+    root.style.setProperty('--azul-bb', mix(acc,'#ffffff',0.55));
+    root.style.setProperty('--azul-claro', mix(acc,'#ffffff',0.88));
+  }
+}
+
+/* ---------- Estado em memória ---------- */
+let state=blankState();
+let curList='enxoval';                       // qual lista a view de lista mostra
+let ui={ view:'inicio', listTab:'lista', q:'', cat:'', prio:'', status:'', sort:'cat' };
+let editingId=null, pendingImport=null;
+
+const LIST_CFG={
+  enxoval:{ titulo:'Enxoval do Pedro', icon:'🧸', sub:'O que falta comprar e o que já chegou',
+    presente:'Quem presenteou / loja', comprado:'Já comprado',
+    vazioTit:'Vamos organizar o enxoval!', vazioMsg:'Suba a planilha que vocês já têm (a gente reconhece os cabeçalhos sozinho) ou comece adicionando itens.' },
+  cha:{ titulo:'Chá de Fraldas', icon:'🎉', sub:'Itens pros convidados trazerem + investimentos da festa',
+    presente:'Quem traz / fornecedor', comprado:'Confirmado / comprado',
+    vazioTit:'Bora montar o chá de fraldas!', vazioMsg:'Adicione o que os convidados podem trazer e os investimentos da festa (decoração, bolo, salgados...). Controle o orçamento aqui também.' }
+};
+const VIEWS=[
+  {key:'inicio',label:'Início',sub:'gestação',icon:'🏠'},
+  {key:'pedro',label:'Pedro',sub:'dados & exames',icon:'👶'},
+  {key:'enxoval',label:'Enxoval',sub:'checklist',icon:'🧸'},
+  {key:'cha',label:'Chá de fraldas',sub:'festa',icon:'🎉'},
+];
+
+const CATS_DEFAULT=['Roupinhas','Higiene','Quarto','Alimentação','Passeio','Banho','Saúde','Brinquedos','Maternidade'];
+const FIELDS=[
+  {key:'categoria',label:'Categoria',aliases:['categoria','cat','grupo','setor','tipo']},
+  {key:'item',label:'Item',aliases:['item','produto','descricao','nome','o que comprar','oque comprar','itens']},
+  {key:'qtdAlvo',label:'Qtd alvo',aliases:['qtd alvo','quantidade alvo','qtd','quantidade','qtde','meta','qtd meta','qtd. alvo']},
+  {key:'precoEstimado',label:'Preço estimado (un)',aliases:['preco estimado (un)','preco estimado','preco unitario','preco un','valor estimado','preco','preco unit','estimado un','valor un']},
+  {key:'_subtotal',label:'Subtotal estimado (ignorado — calculado)',aliases:['subtotal estimado','subtotal','total estimado','subtotal est']},
+  {key:'prioridade',label:'Prioridade',aliases:['prioridade','priori','urgencia','prior']},
+  {key:'comprarQuando',label:'Comprar quando',aliases:['comprar quando','quando comprar','prazo','data','comprar','data limite','quando']},
+  {key:'comprado',label:'OK? (comprado)',aliases:['ok?','ok','comprado','comprado?','status','feito','check','comprou']},
+  {key:'qtdComprada',label:'Qtd comprada',aliases:['qtd comprada','quantidade comprada','qtd comp','comprados','qtd. comprada']},
+  {key:'valorReal',label:'Valor real pago',aliases:['valor real pago','valor real','valor pago','preco pago','gasto','valor','total pago','pago']},
+  {key:'presentePor',label:'Quem presenteou / loja',aliases:['quem presenteou / loja','quem presenteou','presenteou','loja','quem deu','presente','onde comprar','fornecedor','quem presenteou/loja','quem traz','quem leva']},
+];
+const IMPORTABLE=FIELDS.filter(f=>f.key!=='_subtotal');
+
+/* ============================================================ UTIL ============================================================ */
+const norm=s=>(s==null?'':String(s)).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();
+const uid=()=>'i'+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);
+const fmtBRL=n=>(Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const MS=86400000;
+function startToday(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
+function daysBetween(a,b){ return Math.round((a-b)/MS); }
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function fmtDate(d){ return d?d.toLocaleDateString('pt-BR'):''; }
+function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+function parseMoney(v){
+  if(v==null||v==='') return 0;
+  if(typeof v==='number') return v;
+  let s=String(v).replace(/[^\d.,-]/g,'');
+  if(!s) return 0;
+  const lc=s.lastIndexOf(','), ld=s.lastIndexOf('.');
+  if(lc>-1&&ld>-1){ if(lc>ld) s=s.replace(/\./g,'').replace(',','.'); else s=s.replace(/,/g,''); }
+  else if(lc>-1){ const dec=s.length-lc-1; s=dec===3?s.replace(/,/g,''):s.replace(',','.'); }
+  const n=parseFloat(s); return isNaN(n)?0:n;
+}
+function parseNum(v){ if(v==null||v==='') return 0; if(typeof v==='number') return v;
+  const n=parseInt(String(v).replace(/[^\d]/g,''),10); return isNaN(n)?0:n; }
+function parseBool(v){ return ['sim','s','x','✓','ok','true','1','comprado','feito','yes','y'].includes(norm(v)); }
+function parsePrioridade(v){ const t=norm(v); if(!t) return 'media';
+  if(t.includes('alt')||t==='1'||t.includes('urg')) return 'alta';
+  if(t.includes('baix')||t==='3'||t.includes('low')) return 'baixa'; return 'media'; }
+function parseDate(v){ if(!v) return null; if(v instanceof Date) return v;
+  const s=String(v).trim();
+  let m=s.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+  if(m){ let y=m[3]?+m[3]:new Date().getFullYear(); if(y<100)y+=2000; return new Date(y,(+m[2])-1,+m[1]); }
+  m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/); if(m) return new Date(+m[1],(+m[2])-1,+m[3]);
+  return null; }
+function subtotal(it){ return (Number(it.qtdAlvo)||0)*(Number(it.precoEstimado)||0); }
+
+/* ---------- helpers de lista ---------- */
+function LD(){ return state[curList]; }
+function cfg(){ return LIST_CFG[curList]; }
+function normalizeItem(it){
+  return { id:it.id||uid(), categoria:it.categoria||'', item:it.item||'',
+    qtdAlvo:+it.qtdAlvo||0, precoEstimado:+it.precoEstimado||0, prioridade:it.prioridade||'media',
+    comprarQuando:it.comprarQuando||'', comprado:!!it.comprado, qtdComprada:+it.qtdComprada||0,
+    valorReal:+it.valorReal||0, presentePor:it.presentePor||'',
+    descricao:it.descricao||'',
+    lojas:Array.isArray(it.lojas)?it.lojas.map(l=>({ id:l.id||uid(), nome:l.nome||'', url:l.url||'',
+      precos:Array.isArray(l.precos)?l.precos.map(p=>({valor:+p.valor||0,data:p.data||''})):[] })):[],
+    createdAt:it.createdAt||new Date().toISOString(), updatedAt:it.updatedAt||null };
+}
+async function persist(){
+  state.updatedAt=new Date().toISOString();
+  LocalStore.save(state);                                   // cache local instantâneo
+  if(CLOUD && session){ try{ await cloudSave(state); }catch(e){ console.warn('cloud save falhou',e); toast('Salvo local — sincroniza ao reconectar'); } }
+}
+
+/* ---------- gestação ---------- */
+function gestInfo(){
+  const b=state.baby; if(!b||!b.gestRefDate) return null;
+  const ref=parseDate(b.gestRefDate); if(!ref) return null; ref.setHours(0,0,0,0);
+  const today=startToday(); const elapsed=daysBetween(today,ref);
+  const baseDays=(+b.gestWeeks||0)*7+(+b.gestDays||0);
+  const totalNow=baseDays+elapsed;
+  const weeks=Math.floor(totalNow/7), days=((totalNow%7)+7)%7;
+  let dpp=b.dppOverride?parseDate(b.dppOverride):addDays(ref,280-baseDays);
+  if(dpp) dpp.setHours(0,0,0,0);
+  const toBirth=dpp?daysBetween(dpp,today):null;
+  return { weeks,days,totalNow,dpp,toBirth, pct:Math.max(0,Math.min(100,totalNow/280*100)) };
+}
+function examesOrdenados(){
+  return (state.baby.exames||[]).map(e=>({...e,d:parseDate(e.data)})).filter(e=>e.d)
+    .sort((a,b)=>(a.d-b.d)|| (a.hora||'').localeCompare(b.hora||''));
+}
+
+/* ============================================================ RENDER ============================================================ */
+async function boot(){
+  if(!CLOUD){ state=normalizeState(LocalStore.load()); applyTheme(); render(); animateView(); return; }
+  // modo nuvem: exige login por e-mail
+  sb=window.supabase.createClient(SUPA.url,SUPA.anonKey,{auth:{persistSession:true,detectSessionInUrl:true}});
+  sb.auth.onAuthStateChange((_e,sess)=>{ session=sess; if(sess) startApp(); else { appStarted=false; showLogin(); } });
+}
+async function startApp(){
+  if(appStarted) return; appStarted=true;
+  hideLogin();
+  state=normalizeState(await cloudLoad());
+  applyTheme(); render(); animateView(); subscribeRealtime();
+}
+function showLogin(){ const o=document.getElementById('loginOverlay'); if(o) o.classList.add('show'); }
+function hideLogin(){ const o=document.getElementById('loginOverlay'); if(o) o.classList.remove('show'); }
+async function sendMagicLink(){
+  const email=document.getElementById('loginEmail').value.trim();
+  if(!email||!email.includes('@')){ toast('Digite um e-mail válido'); return; }
+  const btn=document.getElementById('loginBtn'); btn.disabled=true; btn.textContent='Enviando...';
+  const { error } = await sb.auth.signInWithOtp({ email, options:{ emailRedirectTo:location.href.split('#')[0] } });
+  btn.disabled=false; btn.textContent='Enviar link de acesso';
+  if(error){ document.getElementById('loginMsg').style.color='var(--perigo)'; document.getElementById('loginMsg').textContent='Erro: '+error.message; return; }
+  document.getElementById('loginMsg').style.color='var(--ok)';
+  document.getElementById('loginMsg').textContent='📩 Link enviado para '+email+'. Abra o e-mail NESTE aparelho pra entrar.';
+}
+async function signOut(){ if(sb) await sb.auth.signOut(); session=null; appStarted=false; if(realtimeChan){ sb.removeChannel(realtimeChan); realtimeChan=null; } showLogin(); }
+
+/* ---------- Aparência (modal) ---------- */
+const ACCENT_PRESETS=['#4f86f7','#0ea5e9','#14b8a6','#22c55e','#7c5cff','#ec4899','#f0764f','#f59e0b'];
+function openAppearance(){ renderAppearance(); showModal('appearanceOverlay'); }
+function renderAppearance(){
+  const t=state.theme||THEME_DEFAULT, acc=(t.accent||'').toLowerCase();
+  const isPreset=ACCENT_PRESETS.map(c=>c.toLowerCase()).includes(acc);
+  document.getElementById('appearanceBody').innerHTML=`
+    <div class="field"><label>Tema</label>
+      <div class="seg">
+        <button class="segbtn ${t.mode!=='dark'?'active':''}" onclick="setThemeMode('light')">☀️ Claro</button>
+        <button class="segbtn ${t.mode==='dark'?'active':''}" onclick="setThemeMode('dark')">🌙 Escuro</button>
+      </div></div>
+    <div class="field" style="margin-top:16px"><label>Cor principal</label>
+      <div class="swatches">
+        ${ACCENT_PRESETS.map(c=>`<button class="swatch ${acc===c.toLowerCase()?'active':''}" style="background:${c}" onclick="setAccent('${c}')" title="${c}"></button>`).join('')}
+        <label class="swatch custom ${!isPreset?'active':''}" title="Cor personalizada"><span>🎨</span>
+          <input type="color" value="${esc(t.accent||'#4f86f7')}" oninput="setAccent(this.value)"></label>
+      </div>
+      <div class="hint" style="margin-top:9px;color:var(--muted);font-size:.78rem">Clique no último quadrado (🎨) pra escolher qualquer cor.</div></div>`;
+}
+async function setThemeMode(m){ state.theme.mode=m; await persist(); applyTheme(); renderAppearance(); render(); }
+async function setAccent(hex){ state.theme.accent=hex; await persist(); applyTheme(); renderAppearance(); render(); }
+
+function render(){
+  refreshDatalist(); renderSidebar();
+  const app=document.getElementById('app');
+  if(ui.view==='inicio') app.innerHTML=homeHTML();
+  else if(ui.view==='pedro') app.innerHTML=pedroHTML();
+  else app.innerHTML=listViewHTML();
+}
+function setView(v){ ui.view=v; if(v==='enxoval'||v==='cha'){ curList=v; ui.listTab='lista'; } render(); animateView(); window.scrollTo({top:0,behavior:'smooth'}); }
+let vinTimer;
+function animateView(){ const a=document.getElementById('app'); if(!a) return;
+  a.classList.remove('vin'); void a.offsetWidth; a.classList.add('vin');
+  clearTimeout(vinTimer); vinTimer=setTimeout(()=>a.classList.remove('vin'),700); }
+
+function renderSidebar(){
+  document.getElementById('sidebar').innerHTML=
+    `<div class="sb-brand"><div class="sb-logo">💙</div><div><b>Pedro</b><span>nosso filho</span></div></div>`+
+    VIEWS.map(v=>`<button class="navitem ${ui.view===v.key?'active':''}" onclick="setView('${v.key}')">
+      <span class="ic">${v.icon}</span><span>${v.label}<small>${v.sub}</small></span></button>`).join('')+
+    `<div class="sb-spacer"></div>
+     <button class="navitem" onclick="openAppearance()"><span class="ic">🎨</span><span>Aparência<small>tema & cores</small></span></button>
+     <button class="navitem" onclick="showModal('backupOverlay')"><span class="ic">💾</span><span>Backup<small>exportar / importar</small></span></button>`+
+    (CLOUD&&session?`<button class="navitem" onclick="signOut()"><span class="ic">🚪</span><span>Sair<small>${esc((session.user&&session.user.email)||'')}</small></span></button>`
+      :(CLOUD?'':`<button class="navitem" title="Funciona offline" style="opacity:.7"><span class="ic">📴</span><span>Modo local<small>sem nuvem</small></span></button>`));
+}
+
+/* ---------------- INÍCIO ---------------- */
+function homeHTML(){
+  const b=state.baby, g=gestInfo();
+  let hero;
+  if(!g){
+    hero=`<div class="empty"><div class="big">👶</div><h2>Conte pra gente sobre o ${esc(b.nome||'Pedro')}</h2>
+      <p>Coloque há quantas semanas e dias está a gestação na aba do Pedro — a partir daí a contagem se atualiza sozinha todo dia.</p>
+      <div class="actions"><button class="btn btn-primary" onclick="setView('pedro')">Preencher dados do Pedro</button></div></div>`;
+  } else {
+    const tri=g.weeks<14?'1º trimestre':g.weeks<28?'2º trimestre':'3º trimestre';
+    const bt=g.toBirth==null?'':(g.toBirth>0?`faltam <b>${g.toBirth}</b> dias para o nascimento 💙`
+      :(g.toBirth===0?'é hoje! 💙':`<b>${-g.toBirth}</b> dias além da data prevista`));
+    hero=`<div class="hero">
+      <div class="hero-emoji">🤰</div>
+      <div class="hero-body">
+        <div class="hero-sub">${esc(b.nome||'Pedro')} • ${tri}</div>
+        <div class="hero-big">${g.weeks} <span>semanas</span> e ${g.days} <span>dia${g.days===1?'':'s'}</span></div>
+        <div class="bar"><i style="width:${g.pct}%"></i></div>
+        <div class="hero-sub" style="margin-top:10px">${bt}${g.dpp?` • previsto p/ ${fmtDate(g.dpp)}`:''}</div>
+      </div></div>`;
+  }
+  // próximo exame
+  const today=startToday();
+  const prox=examesOrdenados().filter(e=>daysBetween(e.d,today)>=0)[0];
+  const examCard=prox
+    ? `<div class="card"><div class="lbl">Próximo exame</div>
+        <div class="val" style="font-size:1.05rem">${esc(prox.nome)}</div>
+        <div class="hint">${fmtDate(prox.d)}${prox.hora?' às '+esc(prox.hora):''} • ${countdownTxt(daysBetween(prox.d,today))}</div></div>`
+    : `<div class="card"><div class="lbl">Próximo exame</div><div class="val" style="font-size:1.05rem">—</div>
+        <div class="hint"><a href="#" onclick="setView('pedro');return false">adicionar na aba do Pedro</a></div></div>`;
+  // enxoval
+  const te=totalsOf(state.enxoval); const pe=te.total?Math.round(te.comprados/te.total*100):0;
+  const enxCard=`<div class="card"><div class="lbl">Enxoval</div>
+    <div class="val">${pe}% <small>${te.comprados}/${te.total}</small></div>
+    <div class="bar"><i style="width:${pe}%"></i></div>
+    <div class="hint">${fmtBRL(te.gasto)} gastos • <a href="#" onclick="setView('enxoval');return false">abrir</a></div></div>`;
+  // chá
+  const fd=state.cha.festaDate?parseDate(state.cha.festaDate):null;
+  const chaCard=`<div class="card accent"><div class="lbl">Chá de fraldas</div>`+
+    (fd?`<div class="val">${countdownTxt(daysBetween(fd,today))}</div><div class="hint">${fmtDate(fd)} • <a style="color:#fff;text-decoration:underline" href="#" onclick="setView('cha');return false">abrir</a></div>`
+      :`<div class="val" style="font-size:1.05rem">sem data</div><div class="hint"><a style="color:#fff;text-decoration:underline" href="#" onclick="setView('cha');return false">definir data da festa</a></div>`)+
+    `</div>`;
+
+  return `<div class="viewhead"><div><h1>Início</h1><div class="sub">Acompanhamento automático da gestação do Pedro</div></div></div>`
+    + hero + `<div class="cards">${examCard}${enxCard}${chaCard}</div>`
+    + proximosExamesPanel();
+}
+function countdownTxt(days){ if(days<0) return `há ${-days} dia${days===-1?'':'s'}`; if(days===0) return 'hoje'; if(days===1) return 'amanhã'; return `em ${days} dias`; }
+function proximosExamesPanel(){
+  const today=startToday(); const ex=examesOrdenados().filter(e=>daysBetween(e.d,today)>=-1);
+  if(!ex.length) return '';
+  return `<div class="panel"><h2>🩺 Próximos exames</h2>
+    <div class="examlist">${ex.slice(0,6).map(e=>`<div class="examitem">
+      <span class="ed">${esc(e.nome)}</span>
+      <span class="dt">${fmtDate(e.d)}${e.hora?' • '+esc(e.hora):''}</span>
+      <span class="cd">${countdownTxt(daysBetween(e.d,today))}</span></div>`).join('')}</div></div>`;
+}
+
+/* ---------------- PEDRO ---------------- */
+function pedroHTML(){
+  const b=state.baby, g=gestInfo();
+  const ref=b.gestRefDate||todayISO();
+  const preview=g?`Hoje, isso significa que o ${esc(b.nome||'bebê')} está com <b>${g.weeks} semanas e ${g.days} dia${g.days===1?'':'s'}</b>${g.dpp?` • previsão de nascimento <b>${fmtDate(g.dpp)}</b>${g.toBirth!=null?` (${g.toBirth>0?'faltam '+g.toBirth+' dias':g.toBirth===0?'é hoje!':(-g.toBirth)+' dias além'})`:''}`:''}.`
+    :'Preencha a data de referência e as semanas para ativarmos a contagem automática.';
+  const exs=examesOrdenados();
+  return `<div class="viewhead"><div><h1>👶 Dados do Pedro</h1><div class="sub">A contagem das semanas se atualiza sozinha todo dia a partir do que você informar aqui.</div></div></div>
+
+  <div class="panel">
+    <h2>Informações</h2>
+    <div class="field" style="margin-bottom:14px"><label>Nome completo</label>
+      <input id="pb_nome" value="${esc(b.nome||'')}" placeholder="Pedro ..." onchange="updBabyNome(this.value)"></div>
+    <div class="formgrid">
+      <div class="field"><label>Data de referência (quando você contou as semanas)</label>
+        <input id="pb_refdate" type="date" value="${esc(ref)}" onchange="savePedroGest()"></div>
+      <div class="field"><label>Previsão de parto (DPP) — opcional</label>
+        <input id="pb_dpp" type="date" value="${esc(b.dppOverride||'')}" onchange="savePedroGest()">
+        <div class="hint" style="font-size:.74rem;color:var(--muted);margin-top:4px">se deixar vazio, calculamos por 40 semanas</div></div>
+      <div class="field"><label>Semanas nessa data</label>
+        <input id="pb_weeks" type="number" min="0" max="45" value="${b.gestWeeks||''}" placeholder="ex.: 24" onchange="savePedroGest()"></div>
+      <div class="field"><label>Dias (0 a 6)</label>
+        <input id="pb_days" type="number" min="0" max="6" value="${b.gestDays||b.gestDays===0?b.gestDays:''}" placeholder="ex.: 3" onchange="savePedroGest()"></div>
+    </div>
+    <div class="preview" style="margin-top:14px;background:var(--azul-claro);color:var(--azul-esc);padding:12px 14px;border-radius:12px;font-weight:600">${preview}</div>
+  </div>
+
+  <div class="panel">
+    <h2>🩺 Exames com a obstetra</h2>
+    <div class="examrow">
+      <input id="ex_nome" placeholder="Nome do exame / consulta" class="field" style="padding:10px 12px;border:1px solid var(--linha);border-radius:11px">
+      <input id="ex_data" type="date" style="padding:10px 12px;border:1px solid var(--linha);border-radius:11px">
+      <input id="ex_hora" type="time" style="padding:10px 12px;border:1px solid var(--linha);border-radius:11px">
+      <button class="btn btn-primary" onclick="addExam()" title="Adicionar">＋</button>
+    </div>
+    <div class="examlist" style="margin-top:8px">
+      ${exs.length?exs.map(e=>`<div class="examitem">
+        <span class="ed">${esc(e.nome)}</span>
+        <span class="dt">${fmtDate(e.d)}${e.hora?' • '+esc(e.hora):''}</span>
+        <span class="cd">${countdownTxt(daysBetween(e.d,startToday()))}</span>
+        <button class="btn btn-icon" onclick="removeExam('${e.id}')" title="Remover">🗑️</button></div>`).join('')
+        :`<div class="hint" style="color:var(--muted)">Nenhum exame cadastrado ainda.</div>`}
+    </div>
+  </div>`;
+}
+async function updBabyNome(v){ state.baby.nome=v.trim(); await persist(); }
+async function savePedroGest(){
+  const v=id=>document.getElementById(id).value;
+  state.baby.gestRefDate=v('pb_refdate')||todayISO();
+  state.baby.gestWeeks=parseNum(v('pb_weeks'));
+  state.baby.gestDays=parseNum(v('pb_days'));
+  state.baby.dppOverride=v('pb_dpp')||'';
+  await persist(); render();
+}
+async function addExam(){
+  const nome=document.getElementById('ex_nome').value.trim();
+  const data=document.getElementById('ex_data').value;
+  const hora=document.getElementById('ex_hora').value;
+  if(!nome||!data){ toast('Coloque ao menos nome e data do exame'); return; }
+  state.baby.exames.push({id:uid(),nome,data,hora});
+  await persist(); render(); toast('Exame adicionado ✓');
+}
+async function removeExam(id){ state.baby.exames=state.baby.exames.filter(e=>e.id!==id); await persist(); render(); }
+
+/* ---------------- LISTA (Enxoval / Chá) ---------------- */
+function listViewHTML(){
+  const c=cfg(), L=LD();
+  const limpar=L.items.length?`<button class="btn btn-ghost" onclick="clearList()" title="Apagar todos os itens desta lista">🗑️ Limpar</button>`:'';
+  const actions=`<div class="actions">
+    ${limpar}
+    <button class="btn btn-soft" onclick="openImport()">📥 Subir planilha</button>
+    <button class="btn btn-primary" onclick="openItemModal()">＋ Item</button></div>`;
+  let head=`<div class="viewhead"><div><h1>${c.icon} ${c.titulo}</h1><div class="sub">${c.sub}</div></div><div class="spacer"></div>${actions}</div>`;
+  // banner data da festa (só chá)
+  if(curList==='cha'){
+    const fd=state.cha.festaDate?parseDate(state.cha.festaDate):null;
+    head+=`<div class="panel" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div><h2 style="margin:0">🗓️ Data da festa</h2><div class="hint" style="color:var(--muted)">contagem regressiva automática</div></div>
+      <input type="date" value="${esc(state.cha.festaDate||'')}" onchange="setFesta(this.value)"
+        style="padding:9px 12px;border:1px solid var(--linha);border-radius:11px;font:inherit">
+      <div style="margin-left:auto;font-weight:800;font-size:1.1rem;color:var(--azul-esc)">${fd?countdownTxt(daysBetween(fd,startToday())):'—'}</div>
+    </div>`;
+  }
+  if(!L.items.length) return head+emptyHTML();
+  return head + dashboardHTML() + categoriesHTML()
+    + `<div class="tabs">
+        <button class="tab ${ui.listTab==='lista'?'active':''}" onclick="setListTab('lista')">📝 Lista</button>
+        <button class="tab ${ui.listTab==='presentes'?'active':''}" onclick="setListTab('presentes')">🎁 ${curList==='cha'?'Quem traz':'Presentes'} & lojas</button>
+      </div>`
+    + (ui.listTab==='presentes'?giftsHTML():(toolbarHTML()+`<div id="listArea">`+listHTML()+`</div>`));
+}
+function setListTab(t){ ui.listTab=t; render(); animateView(); }
+function setFesta(v){ state.cha.festaDate=v; persist(); render(); }
+async function clearList(){
+  const c=cfg(), n=LD().items.length;
+  if(!n){ toast('A lista já está vazia'); return; }
+  if(!confirm(`Apagar TODOS os ${n} itens de "${c.titulo}"? Isso não dá pra desfazer.`)) return;
+  LD().items=[]; await persist(); render(); toast('Lista limpa ✓');
+}
+
+function emptyHTML(){
+  const c=cfg();
+  const exemplo=curList==='enxoval'?`<button class="btn btn-ghost" onclick="loadExampleEnxoval()">✨ Ver exemplo</button>`
+    :`<button class="btn btn-ghost" onclick="loadExampleCha()">✨ Ver exemplo</button>`;
+  return `<div class="empty"><div class="big">${c.icon}</div><h2>${c.vazioTit}</h2><p>${c.vazioMsg}</p>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="openImport()">📥 Subir planilha</button>
+      <button class="btn btn-ghost" onclick="openItemModal()">＋ Adicionar item</button>${exemplo}</div></div>`;
+}
+
+function totalsOf(L){
+  let est=0,gasto=0,comprados=0,faltaValor=0,pendentePago=0;
+  for(const it of L.items){ est+=subtotal(it);
+    if(it.comprado){ comprados++; gasto+=Number(it.valorReal)||0; }       // só conta gasto se marcado no checklist
+    else { faltaValor+=subtotal(it); pendentePago+=Number(it.valorReal)||0; } }
+  return {est,gasto,comprados,total:L.items.length,faltaValor,pendentePago};
+}
+function dashboardHTML(){
+  const L=LD(), t=totalsOf(L);
+  const pct=t.total?Math.round(t.comprados/t.total*100):0;
+  const budget=L.budget||0, bpct=budget?Math.min(100,Math.round(t.gasto/budget*100)):0, saldo=budget-t.gasto;
+  const lblProg=curList==='cha'?'Confirmados / comprados':'Progresso do checklist';
+  return `<div class="cards">
+    <div class="card accent"><div class="lbl">${lblProg}</div>
+      <div class="val">${pct}% <small>${t.comprados}/${t.total}</small></div><div class="bar"><i style="width:${pct}%"></i></div></div>
+    <div class="card"><div class="lbl">Total gasto (real)</div><div class="val">${fmtBRL(t.gasto)}</div>
+      <div class="hint">só conta itens marcados ✓ • de ${fmtBRL(t.est)} estimado${t.pendentePago>0?`<br><span style="color:var(--aviso)">+ ${fmtBRL(t.pendentePago)} digitados aguardando marcar ✓</span>`:''}</div></div>
+    <div class="card"><div class="lbl">Falta ${curList==='cha'?'providenciar':'comprar'}</div><div class="val">${fmtBRL(t.faltaValor)}</div>
+      <div class="hint">${t.total-t.comprados} ${t.total-t.comprados===1?'item':'itens'} pendentes</div></div>
+    <div class="card"><div class="lbl">Orçamento</div>
+      <div class="budget-row"><span style="font-size:1.5rem;font-weight:800">R$</span>
+        <input type="number" min="0" step="50" value="${budget||''}" placeholder="definir" onchange="setBudget(this.value)"></div>
+      ${budget?`<div class="bar"><i style="width:${bpct}%;background:${saldo<0?'var(--perigo)':'var(--ok)'}"></i></div>
+        <div class="hint">${saldo<0?'Estourou '+fmtBRL(-saldo):'Saldo '+fmtBRL(saldo)}</div>`:'<div class="hint">defina uma meta de gasto</div>'}</div>
+  </div>`;
+}
+function categoriesHTML(){
+  const L=LD(), map={};
+  for(const it of L.items){ const c=it.categoria||'Sem categoria'; (map[c]=map[c]||{tot:0,ok:0})['tot']++; if(it.comprado) map[c].ok++; }
+  const cats=Object.keys(map).sort(); if(cats.length<=1) return '';
+  return `<div class="panel"><h2>📦 Progresso por categoria</h2><div class="catgrid">${cats.map(c=>{
+    const m=map[c],pct=Math.round(m.ok/m.tot*100);
+    return `<div class="catrow"><div class="catname"><span>${esc(c)}</span><span>${m.ok}/${m.tot}</span></div><div class="bar"><i style="width:${pct}%"></i></div></div>`;
+  }).join('')}</div></div>`;
+}
+function toolbarHTML(){
+  const cats=[...new Set(LD().items.map(i=>i.categoria).filter(Boolean))].sort();
+  return `<div class="toolbar">
+    <div class="search"><input id="searchBox" placeholder="Buscar item, categoria ou loja..." value="${esc(ui.q)}" oninput="ui.q=this.value;renderListArea()"></div>
+    <select class="filter" onchange="ui.cat=this.value;renderListArea()"><option value="">Todas categorias</option>${cats.map(c=>`<option ${ui.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select>
+    <select class="filter" onchange="ui.prio=this.value;renderListArea()"><option value="">Toda prioridade</option>
+      <option value="alta" ${ui.prio==='alta'?'selected':''}>Alta</option><option value="media" ${ui.prio==='media'?'selected':''}>Média</option><option value="baixa" ${ui.prio==='baixa'?'selected':''}>Baixa</option></select>
+    <select class="filter" onchange="ui.status=this.value;renderListArea()"><option value="">Todos os status</option>
+      <option value="falta" ${ui.status==='falta'?'selected':''}>Falta comprar</option><option value="ok" ${ui.status==='ok'?'selected':''}>Já comprados</option></select>
+    <select class="filter" onchange="ui.sort=this.value;renderListArea()">
+      <option value="cat" ${ui.sort==='cat'?'selected':''}>Ordenar: categoria</option>
+      <option value="prio" ${ui.sort==='prio'?'selected':''}>Ordenar: prioridade</option>
+      <option value="preco" ${ui.sort==='preco'?'selected':''}>Ordenar: preço</option>
+      <option value="quando" ${ui.sort==='quando'?'selected':''}>Ordenar: comprar quando</option></select>
+    ${anyFilter()?`<button class="btn btn-ghost btn-sm" onclick="clearFilters()">✕ Limpar filtros</button>`:''}
+  </div>`;
+}
+function anyFilter(){ return !!(ui.q||ui.cat||ui.prio||ui.status); }
+function clearFilters(){ ui.q=''; ui.cat=''; ui.prio=''; ui.status=''; render(); setTimeout(()=>{const s=document.getElementById('searchBox'); if(s)s.focus();},30); }
+function renderListArea(){ const a=document.getElementById('listArea'); if(a) a.innerHTML=listHTML(); else render(); }
+function filteredItems(){
+  let arr=LD().items.slice(); const q=norm(ui.q);
+  if(q) arr=arr.filter(i=>norm(i.item).includes(q)||norm(i.categoria).includes(q)||norm(i.presentePor).includes(q));
+  if(ui.cat) arr=arr.filter(i=>i.categoria===ui.cat);
+  if(ui.prio) arr=arr.filter(i=>i.prioridade===ui.prio);
+  if(ui.status==='falta') arr=arr.filter(i=>!i.comprado);
+  if(ui.status==='ok') arr=arr.filter(i=>i.comprado);
+  const pr={alta:0,media:1,baixa:2};
+  arr.sort((a,b)=>{
+    if(ui.sort==='prio') return (pr[a.prioridade]-pr[b.prioridade])||a.item.localeCompare(b.item);
+    if(ui.sort==='preco') return subtotal(b)-subtotal(a);
+    if(ui.sort==='quando'){ const da=parseDate(a.comprarQuando),db=parseDate(b.comprarQuando); if(da&&db) return da-db; if(da) return -1; if(db) return 1; return 0; }
+    return (a.categoria||'~').localeCompare(b.categoria||'~')||a.item.localeCompare(b.item);
+  });
+  return arr;
+}
+function whenBadge(it){
+  if(it.comprado) return it.comprarQuando?`<span class="when">${esc(it.comprarQuando)}</span>`:'';
+  const d=parseDate(it.comprarQuando);
+  if(!d) return it.comprarQuando?`<span class="when">${esc(it.comprarQuando)}</span>`:'';
+  const today=startToday(), days=daysBetween(d,today), txt=fmtDate(d);
+  if(days<0) return `<span class="when"><span class="badge b-atrasado">⚠ atrasado</span></span>`;
+  if(days<=7) return `<span class="when"><span class="badge b-semana">⏰ ${days===0?'hoje':days+'d'}</span> ${txt}</span>`;
+  return `<span class="when">${txt}</span>`;
+}
+function listHTML(){
+  const arr=filteredItems(), c=cfg(), all=LD().items.length;
+  const countBar=`<div style="margin:0 2px 10px;color:var(--muted);font-size:.82rem">Mostrando <b>${arr.length}</b> de ${all} ${all===1?'item':'itens'}${anyFilter()?` <a href="#" onclick="clearFilters();return false">· limpar filtros</a>`:''}</div>`;
+  if(!arr.length) return countBar+`<div class="empty" style="padding:40px"><div class="big">🔍</div><p>Nenhum item com esses filtros.</p>
+    <div class="actions"><button class="btn btn-ghost" onclick="clearFilters()">✕ Limpar filtros</button></div></div>`;
+  const ind=it=>`${it.lojas&&it.lojas.length?`<span class="mini-tag" title="lojas monitoradas">🔗 ${it.lojas.length}</span>`:''}${it.descricao?`<span class="mini-tag" title="tem descrição">📝</span>`:''}`;
+  const rows=arr.map(it=>{ const p=it.prioridade;
+    return `<tr class="${it.comprado?'done':''}">
+      <td><input type="checkbox" class="check" ${it.comprado?'checked':''} onchange="toggleDone('${it.id}',this.checked)"></td>
+      <td class="item-cell" onclick="openItemModal('${it.id}')" title="Abrir detalhes"><div class="itemname">${esc(it.item||'—')}</div>${it.categoria?`<span class="badge b-cat">${esc(it.categoria)}</span>`:''}${ind(it)}</td>
+      <td><span class="badge b-${p}">${p[0].toUpperCase()+p.slice(1)}</span></td>
+      <td class="num">${it.qtdAlvo||'—'}</td>
+      <td class="num">${it.precoEstimado?fmtBRL(it.precoEstimado):'—'}</td>
+      <td class="num"><b>${subtotal(it)?fmtBRL(subtotal(it)):'—'}</b></td>
+      <td>${whenBadge(it)}</td>
+      <td class="num"><input class="cellinput qty" type="number" min="0" value="${it.qtdComprada||''}" placeholder="0" onchange="updField('${it.id}','qtdComprada',this.value)"></td>
+      <td class="num"><input class="cellinput money" type="number" min="0" step="0.01" value="${it.valorReal||''}" placeholder="0,00" onchange="updField('${it.id}','valorReal',this.value)"></td>
+      <td><input class="cellinput" value="${esc(it.presentePor)}" placeholder="—" onchange="updField('${it.id}','presentePor',this.value)"></td>
+      <td><button class="btn btn-icon" onclick="openItemModal('${it.id}')" title="Editar">✏️</button></td></tr>`;
+  }).join('');
+  const desktop=`<div class="tablewrap desktop-table"><table><thead><tr>
+    <th>OK</th><th>Item</th><th>Prior.</th><th class="num">Alvo</th><th class="num">Preço un</th><th class="num">Subtotal</th>
+    <th>Quando</th><th class="num">Qtd</th><th class="num">Valor pago</th><th>${esc(c.presente)}</th><th></th>
+    </tr></thead><tbody>${rows}</tbody></table></div>`;
+  const cards=arr.map(it=>{ const p=it.prioridade;
+    return `<div class="mobile-card ${it.comprado?'mc-done':''}">
+      <div class="mc-top"><input type="checkbox" class="check" ${it.comprado?'checked':''} onchange="toggleDone('${it.id}',this.checked)">
+        <div class="mc-title"><div class="itemname" onclick="openItemModal('${it.id}')">${esc(it.item||'—')}</div>
+          <div class="mc-meta">${it.categoria?`<span class="badge b-cat">${esc(it.categoria)}</span>`:''}<span class="badge b-${p}">${p[0].toUpperCase()+p.slice(1)}</span>${whenBadge(it)}${ind(it)}</div></div>
+        <button class="btn btn-icon" onclick="openItemModal('${it.id}')">✏️</button></div>
+      <div class="mc-meta" style="margin-top:8px;color:var(--muted);font-size:.84rem">Alvo ${it.qtdAlvo||0} · ${it.precoEstimado?fmtBRL(it.precoEstimado)+'/un':'sem preço'} · Subtotal <b>${fmtBRL(subtotal(it))}</b></div>
+      <div class="mc-grid">
+        <div><label>Qtd</label><input class="cellinput qty" style="max-width:none" type="number" min="0" value="${it.qtdComprada||''}" placeholder="0" onchange="updField('${it.id}','qtdComprada',this.value)"></div>
+        <div><label>Valor pago</label><input class="cellinput money" style="max-width:none" type="number" min="0" step="0.01" value="${it.valorReal||''}" placeholder="0,00" onchange="updField('${it.id}','valorReal',this.value)"></div>
+        <div style="grid-column:1/-1"><label>${esc(c.presente)}</label><input class="cellinput" value="${esc(it.presentePor)}" placeholder="—" onchange="updField('${it.id}','presentePor',this.value)"></div></div></div>`;
+  }).join('');
+  return countBar+desktop+`<div class="mobile-list">${cards}</div>`;
+}
+function giftsHTML(){
+  const L=LD(), c=cfg(), dados=L.items.filter(i=>i.presentePor&&i.presentePor.trim()), map={};
+  for(const it of dados){ const k=it.presentePor.trim(); (map[k]=map[k]||{itens:[],total:0}); map[k].itens.push(it); map[k].total+=it.comprado?(Number(it.valorReal)||0):0; }
+  const keys=Object.keys(map).sort(), falta=L.items.filter(i=>!i.comprado);
+  let html='';
+  if(keys.length){ html+=`<div class="giftgrid">`+keys.map(k=>{const g=map[k];
+    return `<div class="giftcard"><h3>🎁 ${esc(k)} <small>${g.total?fmtBRL(g.total):g.itens.length+' itens'}</small></h3>
+      <ul>${g.itens.map(it=>`<li><span>${esc(it.item)}</span><span>${it.valorReal?fmtBRL(it.valorReal):(it.comprado?'✓':'')}</span></li>`).join('')}</ul></div>`;
+  }).join('')+`</div>`; }
+  else html+=`<div class="empty" style="padding:36px"><div class="big">🎁</div><p>Preencha "${esc(c.presente)}" nos itens e eles aparecem agrupados aqui.</p></div>`;
+  if(falta.length) html+=`<div class="panel" style="margin-top:18px"><h2>🛒 Ainda falta (${falta.length})</h2>
+    <div class="catgrid">${falta.slice(0,40).map(it=>`<div class="catrow"><div class="catname"><span>${esc(it.item)}</span><span>${whenBadge(it)||''}</span></div></div>`).join('')}</div>
+    ${falta.length>40?`<div class="hint" style="color:var(--muted);font-size:.8rem;margin-top:8px">+ ${falta.length-40} itens…</div>`:''}</div>`;
+  return html;
+}
+
+/* ---------------- AÇÕES lista ---------------- */
+function setBudget(v){ LD().budget=parseMoney(v); persist(); render(); }
+async function toggleDone(id,val){ const it=LD().items.find(x=>x.id===id); if(!it)return;
+  it.comprado=val; it.updatedAt=new Date().toISOString(); if(val&&!it.qtdComprada) it.qtdComprada=it.qtdAlvo||1; await persist(); render(); }
+async function updField(id,field,val){ const it=LD().items.find(x=>x.id===id); if(!it)return;
+  if(field==='qtdComprada') it[field]=parseNum(val); else if(field==='valorReal') it[field]=parseMoney(val); else it[field]=val;
+  it.updatedAt=new Date().toISOString(); await persist(); render(); }
+
+let modalLojas=[];
+function openItemModal(id){
+  editingId=id||null; const c=cfg(); const get=k=>document.getElementById(k);
+  get('f_presenteLabel').textContent=c.presente; get('f_compradoLabel').textContent=c.comprado;
+  if(id){ const it=LD().items.find(x=>x.id===id);
+    get('itemModalTitle').textContent='Editar item';
+    get('f_item').value=it.item; get('f_descricao').value=it.descricao||''; get('f_categoria').value=it.categoria; get('f_prioridade').value=it.prioridade;
+    get('f_qtdAlvo').value=it.qtdAlvo||''; get('f_precoEstimado').value=it.precoEstimado||'';
+    get('f_comprarQuando').value=it.comprarQuando; get('f_qtdComprada').value=it.qtdComprada||'';
+    get('f_valorReal').value=it.valorReal||''; get('f_presentePor').value=it.presentePor; get('f_comprado').checked=it.comprado;
+    modalLojas=JSON.parse(JSON.stringify(it.lojas||[]));
+    get('itemDeleteBtn').style.display='';
+    if(!it.descricao) get('f_descricao').value=autoDescricao(it.item,it.categoria);  // sugere por contexto
+  } else { get('itemModalTitle').textContent='Novo item';
+    ['f_item','f_descricao','f_categoria','f_qtdAlvo','f_precoEstimado','f_comprarQuando','f_qtdComprada','f_valorReal','f_presentePor'].forEach(k=>get(k).value='');
+    get('f_prioridade').value='media'; get('f_comprado').checked=false; modalLojas=[]; get('itemDeleteBtn').style.display='none'; }
+  renderLojas(); showModal('itemOverlay'); setTimeout(()=>get('f_item').focus(),50);
+}
+async function saveItemModal(){
+  const g=k=>document.getElementById(k).value; const item=g('f_item').trim();
+  if(!item){ toast('Dá um nome pro item 🙂'); return; }
+  const data={ item, descricao:g('f_descricao').trim(), categoria:g('f_categoria').trim(), prioridade:g('f_prioridade'),
+    qtdAlvo:parseNum(g('f_qtdAlvo')), precoEstimado:parseMoney(g('f_precoEstimado')), comprarQuando:g('f_comprarQuando').trim(),
+    qtdComprada:parseNum(g('f_qtdComprada')), valorReal:parseMoney(g('f_valorReal')), presentePor:g('f_presentePor').trim(),
+    lojas:modalLojas, comprado:document.getElementById('f_comprado').checked };
+  if(editingId){ const it=LD().items.find(x=>x.id===editingId); Object.assign(it,data); it.updatedAt=new Date().toISOString(); }
+  else LD().items.push(normalizeItem({...data,id:uid()}));
+  await persist(); closeModal('itemOverlay'); render(); toast(editingId?'Item atualizado ✓':'Item adicionado ✓');
+}
+
+/* ---------- Descrição automática (base de conhecimento de enxoval) ---------- */
+const DESC_KB=[
+  {kw:['body','bodie'],d:'Peça-base do enxoval, fica em contato direto com a pele e é trocada várias vezes ao dia. Tenha em bom número (RN e P) — é o que mais suja.'},
+  {kw:['mijao','culote','calca','calça'],d:'Cobre as perninhas e complementa o body no dia a dia. Versátil; vale ter em RN e P.'},
+  {kw:['macacao','macacão','pijama','enterizo'],d:'Peça única e confortável para dormir e passear. Facilita a troca e mantém o bebê aquecido.'},
+  {kw:['saida','saída','maternidade'].concat(['saida-maternidade']),d:'Conjunto especial para a alta da maternidade e as primeiras fotos. Em geral 1 já basta.'},
+  {kw:['casaco','casaquinho','blusa','frio','agasalho','body de frio'],d:'Agasalho para dias frios e ambientes com ar-condicionado. Mais importante conforme a estação do nascimento.'},
+  {kw:['touca','luva','sapatinho','pantufa'],d:'Protegem as extremidades (cabeça, mãos e pés), que perdem calor rápido no recém-nascido.'},
+  {kw:['meia','meias'],d:'Mantêm os pezinhos aquecidos e somem com facilidade — tenha vários pares.'},
+  {kw:['fralda'],d:'Item de maior consumo do enxoval. Compre poucos pacotes RN (o bebê cresce rápido) e estoque P/M.'},
+  {kw:['lenco','lenço','umedecid','toalha umedecida'],d:'Usados em toda troca de fralda. Consumo alto — compensa comprar em maior quantidade.'},
+  {kw:['pomada','assadura','hidratante'],d:'Previne e trata assaduras na troca de fraldas. Cuidado essencial desde o primeiro dia.'},
+  {kw:['banheira','ofuro'],d:'Para o banho seguro do bebê. Modelos com suporte/redutor ajudam nos primeiros meses.'},
+  {kw:['toalha','capuz'],d:'A toalha com capuz seca e aquece após o banho protegendo a cabeça. Tenha algumas para revezar.'},
+  {kw:['sabonete','shampoo','xampu'],d:'Higiene suave, específica para a pele e os olhos sensíveis do bebê.'},
+  {kw:['berco','berço'],d:'Onde o bebê dorme com segurança. Confira a distância entre as grades e a certificação (Inmetro).'},
+  {kw:['colchao','colchão'],d:'Deve ser firme e do tamanho exato do berço, para um sono seguro (evita afundamento).'},
+  {kw:['lencol','lençol','jogo de cama'],d:'Roupa de cama do berço; tenha jogos para revezar — vazamentos noturnos são comuns.'},
+  {kw:['protetor','impermeavel','impermeável','capa de colchao'],d:'Protege o colchão de líquidos e facilita a limpeza, prolongando a vida útil.'},
+  {kw:['comoda','cômoda','trocador','comoda/trocador'],d:'Superfície na altura certa para trocar fraldas com conforto e organizar as peças.'},
+  {kw:['carrinho'],d:'Transporte principal do bebê. Avalie peso, dobragem e se reclina o suficiente para recém-nascido.'},
+  {kw:['bebe conforto','bebê conforto','conforto','cadeirinha','cadeira auto'],d:'Obrigatório para transporte no carro desde a saída da maternidade. A segurança vem em primeiro lugar.'},
+  {kw:['moises','moisés','berco portatil','berço portátil','mini berco'],d:'Espaço aconchegante para o bebê dormir pertinho de vocês nos primeiros meses.'},
+  {kw:['mamadeira'],d:'Para alimentação com fórmula ou leite materno; escolha o bico adequado à idade.'},
+  {kw:['esterilizador','esterilizar'],d:'Higieniza mamadeiras e bicos — importante para a imunidade ainda em formação.'},
+  {kw:['chupeta'],d:'Conforto e sucção não-nutritiva; opcional, escolha o tamanho pela idade.'},
+  {kw:['termometro','termômetro'],d:'Mede a febre com precisão; ajuda a identificar quando procurar o pediatra.'},
+  {kw:['aspirador','nasal'],d:'Desobstrui o nariz do bebê, que ainda não sabe assoar — ajuda na respiração e na amamentação.'},
+  {kw:['cortador','unha','tesoura'],d:'Para cuidar das unhas sem machucar; recém-nascidos arranham o rostinho com facilidade.'},
+  {kw:['cobertor','manta','mantinha'],d:'Aquece e aconchega; útil no berço (com segurança) e nos passeios.'},
+  {kw:['mala','bolsa maternidade','bolsa'],d:'Organiza tudo para o parto e os primeiros dias. Deixe pronta algumas semanas antes da DPP.'},
+  {kw:['babador'],d:'Protege a roupa nas mamadas e babas; consumo alto, tenha vários.'},
+  {kw:['naninha','paninho','fralda de boca'],d:'Conforta o bebê e ajuda nas arrotadas; fácil de lavar e revezar.'},
+];
+function autoDescricao(nome,cat){
+  const n=norm(nome);
+  if(n) for(const e of DESC_KB){ if(e.kw.some(k=>k&&n.includes(norm(k)))) return e.d; }
+  const c=norm(cat);
+  if(c.includes('roup')) return 'Peça de vestuário do enxoval do bebê para o dia a dia.';
+  if(c.includes('higien')||c.includes('banho')) return 'Item de higiene e cuidados diários com o bebê.';
+  if(c.includes('quarto')||c.includes('sono')) return 'Item do quarto/sono para o conforto e a segurança do bebê.';
+  if(c.includes('aliment')||c.includes('amament')) return 'Item de alimentação do bebê.';
+  if(c.includes('passeio')||c.includes('transp')) return 'Item de passeio e transporte do bebê.';
+  if(c.includes('saude')||c.includes('saúde')||c.includes('farm')) return 'Item de saúde e primeiros cuidados com o bebê.';
+  return nome? `Item do enxoval do bebê. Anote aqui pra que serve e por que é importante pra vocês.` : '';
+}
+function suggestDesc(){ const get=k=>document.getElementById(k); get('f_descricao').value=autoDescricao(get('f_item').value, get('f_categoria').value); }
+function maybeSuggestDesc(){ const d=document.getElementById('f_descricao'); if(!d.value.trim()) d.value=autoDescricao(document.getElementById('f_item').value, document.getElementById('f_categoria').value); }
+
+/* ---------- Lojas monitoradas + histórico de preço ---------- */
+function domainOf(url){ try{ return new URL(url).hostname.replace(/^www\./,''); }catch(e){ return url||'loja'; } }
+function addLoja(){
+  const nome=document.getElementById('lj_nome').value.trim();
+  const url=document.getElementById('lj_url').value.trim();
+  const preco=parseMoney(document.getElementById('lj_preco').value);
+  if(!nome && !url){ toast('Coloque ao menos o nome ou o link da loja'); return; }
+  const precos=preco>0?[{valor:preco,data:todayISO()}]:[];
+  modalLojas.push({ id:uid(), nome, url, precos });
+  document.getElementById('lj_nome').value=''; document.getElementById('lj_url').value=''; document.getElementById('lj_preco').value='';
+  renderLojas();
+}
+function addPreco(id){
+  const inp=document.getElementById('pp_'+id); const v=parseMoney(inp.value);
+  if(!(v>0)){ toast('Digite o preço visto agora'); return; }
+  const l=modalLojas.find(x=>x.id===id); if(!l)return;
+  l.precos.push({valor:v,data:todayISO()}); inp.value=''; renderLojas();
+}
+function removeLoja(id){ modalLojas=modalLojas.filter(x=>x.id!==id); renderLojas(); }
+function renderLojas(){
+  const box=document.getElementById('lojasList');
+  if(!modalLojas.length){ box.innerHTML='<div class="hint" style="color:var(--muted);font-size:.82rem;padding:2px 0 8px">Nenhuma loja ainda. Adicione um link e o preço que você viu.</div>'; return; }
+  box.innerHTML=modalLojas.map(l=>{
+    const ps=l.precos.slice().sort((a,b)=>(parseDate(a.data)||0)-(parseDate(b.data)||0));
+    const cur=ps[ps.length-1], prev=ps[ps.length-2];
+    let delta='';
+    if(cur&&prev){ const d=cur.valor-prev.valor;
+      if(d<0) delta=`<span class="delta down">▼ ${fmtBRL(-d)} (caiu)</span>`;
+      else if(d>0) delta=`<span class="delta up">▲ ${fmtBRL(d)} (subiu)</span>`;
+      else delta=`<span class="delta eq">= sem mudança</span>`; }
+    const titulo=l.nome||domainOf(l.url);
+    const link=l.url?`<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(titulo)} ↗</a>`:`<span style="font-weight:700">${esc(titulo)}</span>`;
+    const hist=ps.length?`<div class="loja-hist">histórico: ${ps.map(p=>`${fmtBRL(p.valor)}${p.data?' ('+(parseDate(p.data)?parseDate(p.data).toLocaleDateString('pt-BR'):p.data)+')':''}`).join(' → ')}</div>`:'';
+    return `<div class="loja">
+      <div class="loja-head">${link}<button type="button" class="btn btn-icon rm" onclick="removeLoja('${l.id}')" title="Remover">🗑️</button></div>
+      <div class="loja-price">${cur?`<span class="big">${fmtBRL(cur.valor)}</span>`:'<span class="big" style="color:var(--muted)">sem preço</span>'} ${delta}
+        ${cur&&cur.data?`<span style="font-size:.74rem;color:var(--muted)">visto em ${parseDate(cur.data)?parseDate(cur.data).toLocaleDateString('pt-BR'):cur.data}</span>`:''}</div>
+      ${hist}
+      <div class="loja-add"><input id="pp_${l.id}" inputmode="decimal" placeholder="novo preço visto"><button type="button" class="btn btn-soft btn-sm" onclick="addPreco('${l.id}')">Registrar preço</button></div>
+    </div>`;
+  }).join('');
+}
+async function deleteCurrentItem(){ if(!editingId)return; if(!confirm('Excluir este item?'))return;
+  LD().items=LD().items.filter(x=>x.id!==editingId); await persist(); closeModal('itemOverlay'); render(); toast('Item excluído'); }
+
+/* ---------------- IMPORTAÇÃO ---------------- */
+function openImport(){ resetImport(); document.getElementById('importStep2').classList.add('hidden'); showModal('importOverlay'); }
+function resetImport(){
+  document.getElementById('importStep1').classList.remove('hidden');
+  document.getElementById('importStep1').innerHTML=`<div class="empty" style="box-shadow:none;background:var(--azul-claro);padding:36px 20px">
+    <div class="big">📊</div><p>Escolha sua planilha <b>.xlsx</b> ou <b>.csv</b>.</p>
+    <button class="btn btn-primary" onclick="document.getElementById('sheetFile').click()">Escolher arquivo</button></div>`;
+}
+function importError(msg){
+  document.getElementById('importStep2').classList.add('hidden');
+  const s1=document.getElementById('importStep1'); s1.classList.remove('hidden');
+  s1.innerHTML=`<div class="empty" style="box-shadow:none;background:var(--perigo-bg);padding:26px 20px">
+    <div class="big">😕</div><p style="color:var(--perigo);font-weight:600">${esc(msg)}</p>
+    <button class="btn btn-primary" onclick="resetImport()">Escolher outro arquivo</button></div>`;
+  showModal('importOverlay');
+}
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
+async function ensureXLSX(){
+  if(typeof XLSX!=='undefined') return true;
+  // fallback p/ CDN caso o navegador bloqueie o arquivo local (comum no Safari via file://)
+  try{ await loadScript('https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js'); }catch(e){}
+  return typeof XLSX!=='undefined';
+}
+document.getElementById('sheetFile').addEventListener('change', async e=>{
+  const file=e.target.files[0]; if(!file)return;
+  const isCsv=/\.csv$/i.test(file.name);
+  try{ let aoa;
+    if(isCsv){ aoa=parseCSV(await file.text()); }
+    else {
+      if(!(await ensureXLSX())){ e.target.value='';
+        importError('Seu navegador bloqueou o leitor de Excel (acontece no Safari ao abrir o arquivo direto, e sem internet pro plano B). Soluções: abra o app no Google Chrome, OU salve sua planilha como CSV (no Excel/Google Sheets: Arquivo → Salvar como → CSV) e suba de novo.'); return; }
+      const buf=await file.arrayBuffer(); const wb=XLSX.read(buf,{type:'array'}); const ws=wb.Sheets[wb.SheetNames[0]];
+      aoa=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''});
+    }
+    e.target.value='';
+    if(!aoa||!aoa.length){ importError('A planilha parece vazia. Verifique se os dados estão na primeira aba.'); return; }
+    buildMapping(aoa);
+  }catch(err){ console.error(err); e.target.value='';
+    importError('Não consegui ler esse arquivo ('+esc(err.message||'erro')+'). Se for Excel, tente salvar como CSV e subir de novo.'); }
+});
+function parseCSV(text){
+  text=text.replace(/^﻿/,'');
+  const firstLine=text.slice(0,text.indexOf('\n')>-1?text.indexOf('\n'):text.length);
+  const delim=(firstLine.split(';').length>firstLine.split(',').length)?';':',';
+  const rows=[]; let row=[],cur='',q=false;
+  for(let i=0;i<text.length;i++){ const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=c; }
+    else{ if(c==='"')q=true; else if(c===delim){row.push(cur);cur='';} else if(c==='\n'){row.push(cur);rows.push(row);row=[];cur='';}
+      else if(c==='\r'){} else cur+=c; } }
+  if(cur!==''||row.length){row.push(cur);rows.push(row);} return rows;
+}
+function headerScore(row){ const cells=(row||[]).map(c=>norm(c)).filter(Boolean); let score=0;
+  for(const c of cells){ if(IMPORTABLE.some(f=>f.aliases.includes(c)||f.aliases.some(a=>c.includes(a)||a.includes(c)))) score++; } return score; }
+function buildMapping(aoa){
+  let hi=0,best=0; const lim=Math.min(aoa.length,30);
+  for(let i=0;i<lim;i++){ const sc=headerScore(aoa[i]); if(sc>best){ best=sc; hi=i; } }
+  if(best<2){ hi=0; while(hi<aoa.length&&(aoa[hi]||[]).every(c=>!String(c).trim())) hi++; }
+  const headers=(aoa[hi]||[]).map(h=>String(h).trim());
+  const rows=aoa.slice(hi+1).filter(r=>r.some(c=>String(c).trim()));
+  if(!headers.length){ toast('Não achei cabeçalho na planilha'); return; }
+  const used=new Set(),colToField={};
+  headers.forEach((h,ci)=>{ const nh=norm(h); for(const f of IMPORTABLE){ if(f.aliases.includes(nh)&&!used.has(f.key)){ colToField[ci]=f.key; used.add(f.key); break; } } });
+  headers.forEach((h,ci)=>{ if(colToField[ci]!==undefined) return; const nh=norm(h);
+    for(const f of IMPORTABLE){ if(used.has(f.key))continue; if(f.aliases.some(a=>nh.includes(a)||a.includes(nh))){ colToField[ci]=f.key; used.add(f.key); break; } } });
+  pendingImport={headers,rows};
+  const colOpts=ci=>headers.map((h,i)=>`<option value="${i}" ${String(ci)===String(i)?'selected':''}>${esc(h||('Coluna '+(i+1)))}</option>`).join('');
+  const fieldToCol={}; Object.entries(colToField).forEach(([ci,fk])=>fieldToCol[fk]=ci);
+  document.getElementById('mapBody').innerHTML=IMPORTABLE.map(f=>{ const ci=fieldToCol[f.key]; const det=ci!==undefined;
+    return `<tr><td>${f.label}${f.key==='item'?' *':''} ${det?'<span class="map-detected">● detectado</span>':''}</td>
+      <td><select data-field="${f.key}"><option value="">— não importar —</option>${colOpts(ci)}</select></td></tr>`; }).join('');
+  document.getElementById('importPreview').textContent=`${rows.length} linhas encontradas · ${headers.length} colunas. Importando para: ${cfg().titulo}.`;
+  document.getElementById('importStep1').classList.add('hidden'); document.getElementById('importStep2').classList.remove('hidden');
+}
+async function confirmImport(){
+  if(!pendingImport)return; const {rows}=pendingImport;
+  const fieldCol={}; document.querySelectorAll('#mapBody select').forEach(s=>{ if(s.value!=='') fieldCol[s.dataset.field]=+s.value; });
+  if(fieldCol.item===undefined){ toast('Escolha qual coluna é o "Item"'); return; }
+  const novos=[];
+  for(const r of rows){ const g=k=>fieldCol[k]!==undefined?r[fieldCol[k]]:''; const nome=String(g('item')||'').trim(); if(!nome) continue;
+    novos.push(normalizeItem({ id:uid(), item:nome, categoria:String(g('categoria')||'').trim(), qtdAlvo:parseNum(g('qtdAlvo')),
+      precoEstimado:parseMoney(g('precoEstimado')), prioridade:parsePrioridade(g('prioridade')), comprarQuando:String(g('comprarQuando')||'').trim(),
+      comprado:parseBool(g('comprado')), qtdComprada:parseNum(g('qtdComprada')), valorReal:parseMoney(g('valorReal')), presentePor:String(g('presentePor')||'').trim() })); }
+  if(!novos.length){ toast('Nenhuma linha com item encontrada'); return; }
+  const mode=document.querySelector('input[name="impmode"]:checked').value;
+  LD().items = mode==='replace'? novos : LD().items.concat(novos);
+  await persist(); pendingImport=null; closeModal('importOverlay'); render(); toast(`${novos.length} itens importados 🎉`);
+}
+
+/* ---------------- BACKUP ---------------- */
+function exportJSON(){ download(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),`pedro-backup-${dateStamp()}.json`); toast('Backup exportado ✓'); }
+document.getElementById('importJsonFile').addEventListener('change', async e=>{
+  const f=e.target.files[0]; if(!f)return;
+  try{ const data=JSON.parse(await f.text());
+    if(!confirm('Isso substitui os dados atuais pelo backup. Continuar?')){ e.target.value=''; return; }
+    state=migrate(data); state.enxoval.items=state.enxoval.items.map(normalizeItem); state.cha.items=state.cha.items.map(normalizeItem);
+    await persist(); applyTheme(); closeModal('backupOverlay'); render(); toast('Backup importado ✓');
+  }catch(err){ toast('Arquivo de backup inválido'); } e.target.value='';
+});
+function exportCSV(){
+  const cols=['Categoria','Item','Qtd alvo','Preço estimado (un)','Subtotal estimado','Prioridade','Comprar quando','OK?','Qtd comprada','Valor real pago',cfg().presente];
+  const e2=v=>{ v=v==null?'':String(v); return /[";\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+  const lines=[cols.join(';')];
+  for(const it of LD().items) lines.push([it.categoria,it.item,it.qtdAlvo,it.precoEstimado,subtotal(it),it.prioridade,it.comprarQuando,it.comprado?'Sim':'Não',it.qtdComprada,it.valorReal,it.presentePor].map(e2).join(';'));
+  download(new Blob(['﻿'+lines.join('\n')],{type:'text/csv;charset=utf-8'}),`${curList}-${dateStamp()}.csv`); toast('CSV exportado ✓');
+}
+function download(blob,name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); }
+function dateStamp(){ return new Date().toISOString().slice(0,10); }
+
+/* ---------------- EXEMPLOS ---------------- */
+async function loadExampleEnxoval(){
+  const ex=[['Roupinhas','Body manga curta RN',8,18.9,'alta','Julho',true,8,151,'Vó Ana'],
+    ['Roupinhas','Macacão pijama',6,39.9,'alta','Julho',false,0,0,''],['Higiene','Fralda RN (pacote)',4,49.9,'alta','20/07/2026',true,2,99,'Loja Bebê'],
+    ['Higiene','Lenços umedecidos',6,12.5,'alta','',false,0,0,''],['Quarto','Berço',1,899,'alta','15/06/2026',true,1,799,'Padrinhos'],
+    ['Quarto','Colchão berço',1,259,'alta','',false,0,0,''],['Passeio','Carrinho',1,1299,'alta','01/06/2026',false,0,0,''],
+    ['Banho','Banheira',1,129,'media','01/07/2026',false,0,0,''],['Saúde','Termômetro',1,45,'media','',true,1,42,'Farmácia']];
+  state.enxoval.items=ex.map(r=>normalizeItem({id:uid(),categoria:r[0],item:r[1],qtdAlvo:r[2],precoEstimado:r[3],prioridade:r[4],comprarQuando:r[5],comprado:r[6],qtdComprada:r[7],valorReal:r[8],presentePor:r[9]}));
+  state.enxoval.budget=6000; curList='enxoval'; await persist(); render(); toast('Exemplo carregado ✨');
+}
+async function loadExampleCha(){
+  const ex=[['Convidados trazem','Fralda P (pacote)',20,40,'alta','',false,0,0,''],['Convidados trazem','Fralda M (pacote)',15,42,'alta','',false,0,0,''],
+    ['Convidados trazem','Lenços umedecidos',10,13,'media','',false,0,0,''],['Investimento festa','Decoração',1,400,'alta','',false,0,0,'Loja Festa'],
+    ['Investimento festa','Bolo',1,250,'alta','',true,1,250,'Confeitaria'],['Investimento festa','Salgados (cento)',6,90,'alta','',false,0,0,''],
+    ['Investimento festa','Convites',30,3,'baixa','',true,30,90,'Gráfica'],['Investimento festa','Lembrancinhas',30,8,'media','',false,0,0,'']];
+  state.cha.items=ex.map(r=>normalizeItem({id:uid(),categoria:r[0],item:r[1],qtdAlvo:r[2],precoEstimado:r[3],prioridade:r[4],comprarQuando:r[5],comprado:r[6],qtdComprada:r[7],valorReal:r[8],presentePor:r[9]}));
+  state.cha.budget=2000; state.cha.festaDate='2026-08-30'; curList='cha'; await persist(); render(); toast('Exemplo carregado ✨');
+}
+
+/* ---------------- HELPERS UI ---------------- */
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function showModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show');
+  if(pendingRemote && !document.querySelector('.overlay.show')){ state=pendingRemote; pendingRemote=null; applyTheme(); render(); toast('Sincronizado 🔄'); } }
+function refreshDatalist(){ const cats=[...new Set([...CATS_DEFAULT, ...state.enxoval.items.map(i=>i.categoria), ...state.cha.items.map(i=>i.categoria)].filter(Boolean))];
+  document.getElementById('catlist').innerHTML=cats.map(c=>`<option value="${esc(c)}">`).join(''); }
+let toastTimer;
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2600); }
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('show'); }));
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.overlay.show').forEach(o=>o.classList.remove('show')); });
+/* recontagem automática: re-renderiza o Início quando o dia vira */
+setInterval(()=>{ if(ui.view==='inicio') render(); }, 60*1000);
+
+boot();
+</script>
+</body>
+</html>

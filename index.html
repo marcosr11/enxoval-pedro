@@ -164,11 +164,11 @@
   .empty p{color:var(--muted);max-width:460px;margin:0 auto 18px}
   .empty .actions{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
 
-  .overlay{position:fixed;inset:0;background:rgba(20,40,80,.4);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:none;
-    align-items:flex-start;justify-content:center;padding:24px 16px;z-index:50;overflow:auto}
+  .overlay{position:fixed;inset:0;background:rgba(15,25,50,.55);display:none;
+    align-items:flex-start;justify-content:center;padding:24px 16px;z-index:50;overflow:auto;-webkit-overflow-scrolling:touch}
   .overlay.show{display:flex}
   .modal{background:var(--card);border-radius:20px;box-shadow:0 20px 60px rgba(20,40,80,.3);width:100%;max-width:620px;padding:24px;animation:pop .2s ease;
-    max-height:calc(100vh - 48px);overflow-y:auto;-webkit-overflow-scrolling:touch}
+    max-height:calc(100vh - 48px);max-height:calc(100dvh - 48px);overflow-y:auto;-webkit-overflow-scrolling:touch}
   .modal.wide{max-width:760px}
   @keyframes pop{from{transform:translateY(12px) scale(.98);opacity:0}to{transform:none;opacity:1}}
   .modal h2{font-size:1.2rem;margin-bottom:4px}
@@ -515,6 +515,7 @@
    Hoje: localStorage. Para hospedar/sincronizar online, troque
    só estas duas funções por chamadas fetch() a um backend.
    ============================================================ */
+const BUILD='0622-modal2';             // marcador de versão (pra confirmar deploy/cache)
 const STORAGE_KEY='enxoval-bebe-v1';   // mantém a chave; migramos a forma por dentro
 const DOC_ID='pedro';                  // documento compartilhado do casal na nuvem
 const SUPA=(window.SUPA||{url:'',anonKey:''});
@@ -774,7 +775,8 @@ function renderSidebar(){
      <button class="navitem" onclick="openAppearance()"><span class="ic">🎨</span><span>Aparência<small>tema & cores</small></span></button>
      <button class="navitem" onclick="showModal('backupOverlay')"><span class="ic">💾</span><span>Backup<small>exportar / importar</small></span></button>`+
     (CLOUD&&session?`<button class="navitem" onclick="signOut()"><span class="ic">🚪</span><span>Sair<small>${esc((session.user&&session.user.email)||'')}</small></span></button>`
-      :(CLOUD?'':`<button class="navitem" title="Funciona offline" style="opacity:.7"><span class="ic">📴</span><span>Modo local<small>sem nuvem</small></span></button>`));
+      :(CLOUD?'':`<button class="navitem" title="Funciona offline" style="opacity:.7"><span class="ic">📴</span><span>Modo local<small>sem nuvem</small></span></button>`))+
+    `<div style="padding:6px 14px;font-size:.64rem;color:var(--muted);opacity:.65">build ${BUILD}</div>`;
 }
 
 /* ---------------- INÍCIO ---------------- */

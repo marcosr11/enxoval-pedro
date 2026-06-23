@@ -94,6 +94,17 @@
   .ins-chip .txt{color:var(--txt);font-weight:600}
   .ins-chip.on{border-color:currentColor;background:color-mix(in srgb,currentColor 12%,var(--card))}
   .ins-danger{color:var(--perigo)} .ins-warn{color:var(--aviso)} .ins-info{color:var(--azul-esc)} .ins-money{color:#7c5cff} .ins-muted{color:var(--muted)}
+  /* Planos de ação (chá) */
+  .acoes{display:flex;flex-direction:column;gap:8px}
+  .acao{display:flex;align-items:flex-start;gap:11px;padding:11px 13px;border:1px solid var(--linha);border-radius:12px;transition:.15s}
+  .acao:hover{box-shadow:var(--sombra-sm)}
+  .acao.done{background:var(--done-bg)}
+  .acao.done .acao-tit{text-decoration:line-through;color:var(--muted)}
+  .acao-body{flex:1;min-width:0}
+  .acao-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .acao-tit{font-weight:700}
+  .acao-prazo{font-size:.72rem;font-weight:800;color:var(--azul-esc);background:var(--azul-claro);padding:2px 9px;border-radius:99px;white-space:nowrap}
+  .acao-obs{font-size:.82rem;color:var(--muted);margin-top:4px;line-height:1.45}
   .budget-row{display:flex;align-items:center;gap:6px;margin-top:2px}
   .budget-row input{width:120px;border:1px solid var(--linha);background:var(--inp);color:var(--txt);
     border-radius:8px;padding:5px 8px;font:inherit;font-weight:700;font-size:1rem}
@@ -521,6 +532,24 @@
   </div>
 </div>
 
+<!-- Modal plano de ação (chá) -->
+<div class="overlay" id="acaoOverlay">
+  <div class="modal" style="max-width:520px">
+    <button class="modal-close" onclick="closeModal('acaoOverlay')">×</button>
+    <h2 id="acaoTitle">Novo plano</h2>
+    <div class="desc">Tarefa para a festa acontecer — com prazo e possíveis empresas/observações.</div>
+    <div class="field"><label>O que fazer *</label><input id="a_titulo" placeholder="Ex.: Fechar buffet"></div>
+    <div class="field"><label>Prazo</label><input id="a_prazo" placeholder="Ex.: Até 15/07 · Julho · 4 semanas antes"></div>
+    <div class="field"><label>Empresas / observações</label><textarea id="a_obs" rows="3" placeholder="Possíveis fornecedores, valores, links, decisões..."></textarea></div>
+    <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer"><input type="checkbox" id="a_feito" class="check"> Concluído</label>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="acaoDelBtn" onclick="deleteAcao()" style="margin-right:auto">🗑️ Excluir</button>
+      <button class="btn btn-ghost" onclick="closeModal('acaoOverlay')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveAcao()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal aparência -->
 <div class="overlay" id="appearanceOverlay">
   <div class="modal" style="max-width:440px">
@@ -540,7 +569,7 @@
    Hoje: localStorage. Para hospedar/sincronizar online, troque
    só estas duas funções por chamadas fetch() a um backend.
    ============================================================ */
-const BUILD='0623-insights2';         // marcador de versão (pra confirmar deploy/cache)
+const BUILD='0623-cha-festa';         // marcador de versão (pra confirmar deploy/cache)
 const STORAGE_KEY='enxoval-bebe-v1';   // mantém a chave; migramos a forma por dentro
 const DOC_ID='pedro';                  // documento compartilhado do casal na nuvem
 const SUPA=(window.SUPA||{url:'',anonKey:''});
@@ -552,7 +581,8 @@ const LocalStore={
   load(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(raw) return migrate(JSON.parse(raw)); }catch(e){ console.warn('falha ao ler',e); } return blankState(); },
   save(s){ localStorage.setItem(STORAGE_KEY,JSON.stringify(s)); }
 };
-function normalizeState(s){ s.enxoval.items=(s.enxoval.items||[]).map(normalizeItem); s.cha.items=(s.cha.items||[]).map(normalizeItem); return s; }
+function normalizeState(s){ s.enxoval.items=(s.enxoval.items||[]).map(normalizeItem); s.cha.items=(s.cha.items||[]).map(normalizeItem);
+  s.cha.acoes=(s.cha.acoes||[]).map(a=>({id:a.id||uid(), titulo:a.titulo||'', prazo:a.prazo||'', obs:a.obs||'', feito:!!a.feito})); return s; }
 
 /* ---- Nuvem (Supabase) ---- */
 async function cloudLoad(){
@@ -580,7 +610,7 @@ function blankState(){
   return { version:2,
     baby:{ nome:'Pedro', gestRefDate:'', gestWeeks:0, gestDays:0, dppOverride:'', exames:[] },
     enxoval:{ items:[], budget:0 },
-    cha:{ items:[], budget:0, festaDate:'' },
+    cha:{ items:[], budget:0, festaDate:'', local:'', convidados:0, horario:'', acoes:[] },
     theme:{...THEME_DEFAULT}, updatedAt:null };
 }
 /* migração: v1 tinha {items, budget} no topo -> vira enxoval */
@@ -591,7 +621,7 @@ function migrate(s){
     return { version:2,
       baby:Object.assign(base.baby, s.baby||{}),
       enxoval:{ items:(s.enxoval&&s.enxoval.items)||[], budget:(s.enxoval&&s.enxoval.budget)||0 },
-      cha:{ items:(s.cha&&s.cha.items)||[], budget:(s.cha&&s.cha.budget)||0, festaDate:(s.cha&&s.cha.festaDate)||'' },
+      cha:Object.assign(base.cha, s.cha||{}),
       theme:Object.assign({...THEME_DEFAULT}, s.theme||{}),
       updatedAt:s.updatedAt||null };
   }
@@ -642,6 +672,7 @@ const VIEWS=[
 ];
 
 const CATS_DEFAULT=['Roupinhas','Higiene','Quarto','Alimentação','Passeio','Banho','Saúde','Brinquedos','Maternidade'];
+const CATS_CHA=['Buffet','Bebidas','Decoração','Foto','Convites','Lembrancinhas','Utensílios','Reserva'];
 const FIELDS=[
   {key:'categoria',label:'Categoria',aliases:['categoria','cat','grupo','setor','tipo']},
   {key:'item',label:'Item',aliases:['item','produto','descricao','nome','o que comprar','oque comprar','itens']},
@@ -937,21 +968,107 @@ function listViewHTML(){
     <button class="btn btn-soft" onclick="openImport()">📥 Subir planilha</button>
     <button class="btn btn-primary" onclick="openItemModal()">＋ Item</button></div>`;
   let head=`<div class="viewhead"><div><h1>${c.icon} ${c.titulo}</h1><div class="sub">${c.sub}</div></div><div class="spacer"></div>${actions}</div>`;
-  // banner data da festa (só chá)
-  if(curList==='cha'){
-    const fd=state.cha.festaDate?parseDate(state.cha.festaDate):null;
-    head+=`<div class="panel" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-      <div><h2 style="margin:0">🗓️ Data da festa</h2><div class="hint" style="color:var(--muted)">contagem regressiva automática</div></div>
-      <input type="date" value="${esc(state.cha.festaDate||'')}" onchange="setFesta(this.value)"
-        style="padding:9px 12px;border:1px solid var(--linha);border-radius:11px;font:inherit">
-      <div style="margin-left:auto;font-weight:800;font-size:1.1rem;color:var(--azul-esc)">${fd?countdownTxt(daysBetween(fd,startToday())):'—'}</div>
-    </div>`;
-  }
+  if(curList==='cha') head+=festaPanelHTML()+planosHTML();   // detalhes da festa + planos de ação
   if(!L.items.length) return head+emptyHTML();
   return head + dashboardHTML() + insightsHTML() + categoriesHTML()
     + toolbarHTML() + `<div id="listArea">` + listHTML() + `</div>`;
 }
+/* ---------------- Chá: detalhes da festa + planos de ação ---------------- */
+function festaPanelHTML(){
+  const ch=state.cha, fd=ch.festaDate?parseDate(ch.festaDate):null, t=totalsOf(ch);
+  const cpp=(ch.convidados>0)?t.est/ch.convidados:0;
+  return `<div class="panel">
+    <h2>🎉 Detalhes da festa <button class="btn btn-soft btn-sm" style="margin-left:auto" onclick="loadChaPlanejamento()" title="Preencher com o planejamento pronto">📋 Carregar planejamento</button></h2>
+    <div class="formgrid">
+      <div class="field"><label>Local da festa</label><input value="${esc(ch.local||'')}" placeholder="Ex.: Salão do prédio" onchange="updCha('local',this.value)"></div>
+      <div class="field"><label>Data da festa</label><input type="date" value="${esc(ch.festaDate||'')}" onchange="updCha('festaDate',this.value)"></div>
+      <div class="field"><label>Convidados</label><input type="number" min="0" value="${ch.convidados||''}" placeholder="Ex.: 33" onchange="updChaNum('convidados',this.value)"></div>
+      <div class="field"><label>Horário</label><input value="${esc(ch.horario||'')}" placeholder="Ex.: Tarde (lanche)" onchange="updCha('horario',this.value)"></div>
+    </div>
+    <div class="hint" style="margin-top:13px;display:flex;gap:16px;flex-wrap:wrap;color:var(--muted)">
+      ${fd?`<span>⏳ <b style="color:var(--azul-esc)">${countdownTxt(daysBetween(fd,startToday()))}</b> p/ a festa · ${fmtDate(fd)}</span>`:''}
+      ${ch.convidados?`<span>👥 ${ch.convidados} convidados</span>`:''}
+      ${cpp?`<span>🧮 custo médio <b style="color:var(--txt)">${fmtBRL(cpp)}</b>/pessoa</span>`:''}
+    </div>
+  </div>`;
+}
+function planosHTML(){
+  const acoes=state.cha.acoes||[], done=acoes.filter(a=>a.feito).length;
+  const rows=acoes.map(a=>`<div class="acao ${a.feito?'done':''}">
+      <input type="checkbox" class="check" ${a.feito?'checked':''} onchange="toggleAcao('${a.id}',this.checked)">
+      <div class="acao-body">
+        <div class="acao-top"><span class="acao-tit">${esc(a.titulo)}</span>${a.prazo?`<span class="acao-prazo">${esc(a.prazo)}</span>`:''}</div>
+        ${a.obs?`<div class="acao-obs">${esc(a.obs)}</div>`:''}
+      </div>
+      <button class="btn btn-icon" onclick="editAcao('${a.id}')" title="Editar">✏️</button>
+      <button class="btn btn-icon" onclick="removeAcao('${a.id}')" title="Remover">🗑️</button>
+    </div>`).join('');
+  return `<div class="panel">
+    <h2>✅ Planos de ação ${acoes.length?`<span style="font-weight:500;font-size:.82rem;color:var(--muted)">${done}/${acoes.length} feitos</span>`:''}
+      <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="addAcao()">＋ Plano</button></h2>
+    <div class="acoes">${rows||'<div class="hint" style="color:var(--muted)">Nenhum plano ainda. Adicione tarefas como "Fechar buffet", "Pedir orçamentos", "Definir tema"…</div>'}</div>
+  </div>`;
+}
 function setFesta(v){ state.cha.festaDate=v; persist(); render(); }
+async function updCha(field,val){ state.cha[field]=val; await persist(); render(); }
+async function updChaNum(field,val){ state.cha[field]=parseNum(val); await persist(); render(); }
+async function toggleAcao(id,val){ const a=(state.cha.acoes||[]).find(x=>x.id===id); if(!a)return; a.feito=val; await persist(); render(); }
+async function removeAcao(id){ if(!confirm('Excluir este plano?'))return; state.cha.acoes=(state.cha.acoes||[]).filter(x=>x.id!==id); await persist(); render(); }
+let editingAcao=null;
+function addAcao(){ editingAcao=null; ['a_titulo','a_prazo','a_obs'].forEach(k=>document.getElementById(k).value=''); document.getElementById('a_feito').checked=false;
+  document.getElementById('acaoTitle').textContent='Novo plano'; document.getElementById('acaoDelBtn').style.display='none'; showModal('acaoOverlay'); setTimeout(()=>document.getElementById('a_titulo').focus(),50); }
+function editAcao(id){ const a=(state.cha.acoes||[]).find(x=>x.id===id); if(!a)return; editingAcao=id;
+  document.getElementById('a_titulo').value=a.titulo; document.getElementById('a_prazo').value=a.prazo||''; document.getElementById('a_obs').value=a.obs||''; document.getElementById('a_feito').checked=!!a.feito;
+  document.getElementById('acaoTitle').textContent='Editar plano'; document.getElementById('acaoDelBtn').style.display=''; showModal('acaoOverlay'); }
+async function saveAcao(){ const tit=document.getElementById('a_titulo').value.trim(); if(!tit){ toast('Dá um nome pro plano'); return; }
+  const data={ titulo:tit, prazo:document.getElementById('a_prazo').value.trim(), obs:document.getElementById('a_obs').value.trim(), feito:document.getElementById('a_feito').checked };
+  if(!state.cha.acoes) state.cha.acoes=[];
+  if(editingAcao){ const a=state.cha.acoes.find(x=>x.id===editingAcao); Object.assign(a,data); } else state.cha.acoes.push({id:uid(),...data});
+  await persist(); closeModal('acaoOverlay'); render(); toast(editingAcao?'Plano atualizado ✓':'Plano adicionado ✓'); }
+async function deleteAcao(){ if(!editingAcao)return; if(!confirm('Excluir este plano?'))return; state.cha.acoes=state.cha.acoes.filter(x=>x.id!==editingAcao); await persist(); closeModal('acaoOverlay'); render(); }
+async function loadChaPlanejamento(){
+  if(!confirm('Carregar o planejamento do PDF no Chá de Fraldas?\n\nIsso substitui os detalhes da festa, os itens por categoria e os planos de ação atuais do chá. (Não mexe no enxoval.)')) return;
+  const ch=state.cha;
+  ch.local='Salão do prédio'; ch.convidados=33; ch.horario='Tarde (lanche)'; ch.budget=7798;
+  const I=(categoria,item,qtdAlvo,precoEstimado,prioridade,comprarQuando,descricao)=>normalizeItem({id:uid(),categoria,item,qtdAlvo,precoEstimado,prioridade,comprarQuando,descricao,comprado:false});
+  ch.items=[
+    I('Buffet','Buffet por pessoa',33,60,'alta','Julho','8-10 salgados, mesa de frios, mini sanduíches, bolo ~3kg'),
+    I('Buffet','Mesa de doces finos',60,4,'media','Julho','Brigadeiro, beijinho, casadinho (~2 por pessoa)'),
+    I('Buffet','Bolo cenográfico/tema',1,280,'alta','Julho','Bolo principal decorado conforme o tema (confirmar se já vem no pacote)'),
+    I('Buffet','Garçom (1 pessoa)',1,250,'media','Julho','Servir bebidas e organizar a mesa por ~4h'),
+    I('Bebidas','Espumante (Chandon/Salton/Aurora)',6,55,'alta','Agosto','1 garrafa p/ cada 5-6 pessoas — brinde principal'),
+    I('Bebidas','Cerveja long neck',36,7,'media','Agosto','~1/3 dos convidados, ~3 unidades cada'),
+    I('Bebidas','Refrigerante 2L',6,12,'media','Agosto','Mix de regular e zero'),
+    I('Bebidas','Suco natural (jarras)',4,25,'media','Agosto','Maracujá, laranja, abacaxi'),
+    I('Bebidas','Água mineral 500ml',24,2.5,'media','Agosto','Importante em festa de tarde'),
+    I('Bebidas','Gelo (saco 5kg)',4,15,'media','Semana da festa','Para cerveja, espumante e jarras'),
+    I('Decoração','Painel/backdrop temático',1,450,'alta','Julho','Painel principal ~2x2m (lona ou tecido com letreiro)'),
+    I('Decoração','Decoração mesa principal',1,380,'alta','Julho','Toalha, suportes, arranjos, plaquinhas'),
+    I('Decoração','Arco/topo de balões',1,320,'media','Julho','Balões orgânicos no painel'),
+    I('Decoração','Itens temáticos extras',1,250,'baixa','Julho','Plaquinhas, varal de fotos, mini-arranjos'),
+    I('Decoração','Flores frescas (kit)',1,200,'baixa','Semana da festa','Eucalipto + flores para a mesa principal'),
+    I('Decoração','Mão de obra (montagem)',1,300,'media','Julho','Decoradora montar e desmontar (4-5h)'),
+    I('Foto','Fotógrafo profissional (~2h)',1,800,'alta','Julho','Cobertura + 80-150 fotos editadas em ~10 dias'),
+    I('Convites','Convite digital animado',1,80,'media','Julho','Designer no Instagram ou Canva (~30s)'),
+    I('Convites','Lista de presentes online',1,50,'alta','Julho','Mil Beijos / Glamy — evita presente duplicado'),
+    I('Lembrancinhas','Lembrancinha individual',33,8,'baixa','Agosto','Sabonete, mini-vela, suculenta ou tag com docinho (opcional)'),
+    I('Utensílios','Toalhas de mesa',4,35,'baixa','Agosto','Aluguel — confirmar o que o salão fornece'),
+    I('Utensílios','Pratos/copos/talheres descartáveis',1,180,'media','Agosto','Caso o buffet não inclua louça'),
+    I('Utensílios','Guardanapos e itens de mesa',1,60,'baixa','Agosto','Coordenados com a decoração'),
+    I('Reserva','Reserva para imprevistos (~10%)',1,700,'media','','Deixar disponível com objetivo de NÃO usar; se sobrar, vira economia no enxoval'),
+  ];
+  const A=(titulo,prazo,obs)=>({id:uid(),titulo,prazo,obs,feito:false});
+  ch.acoes=[
+    A('Definir data, horário e tema','8 semanas antes (junho)','Reservar o salão do prédio com o síndico. Iniciar a lista de convidados.'),
+    A('Pedir orçamentos','6 semanas antes (julho, 1ª quinz.)','3 orçamentos de buffet e 2-3 de decoração. Conversar com fotógrafo(a). Em Petrolina: Espaço Encanto, Recanto Buffet e autônomos no Instagram.'),
+    A('Fechar contratos e enviar convites','4 semanas antes (julho, 2ª quinz.)','Fechar buffet, decoração e foto. Convite digital (Canva/designer). Montar a lista de presentes online (Mil Beijos/Glamy). Enviar convites.'),
+    A('Confirmar presença e comprar bebidas','2 semanas antes (agosto)','Confirmar presença. Comprar bebidas no atacado (Atacadão/Assaí — bem mais barato que pelo buffet). Confirmar detalhes finais.'),
+    A('Logística da semana','Semana da festa','Comprar gelo. Conferir pagamentos pendentes. Preparar caixa térmica. Combinar a logística do dia.'),
+    A('Montagem (véspera)','Dia anterior','Decoradora monta o salão. Buffet entrega itens não-perecíveis. Conferir tudo.'),
+    A('Definir tema da festa','Após confirmar o sexo','Sugestões neutras (mais baratas): Bichinhos do bosque (verde sálvia/bege), Boho/safári (terracota/palha), Estrelas/lua (azul marinho/dourado). Evitar personagem (licenciamento caro).'),
+  ];
+  curList='cha'; await persist(); render(); animateView(); toast('Planejamento do chá carregado 🎉');
+}
 async function clearList(){
   const c=cfg(), n=LD().items.length;
   if(!n){ toast('A lista já está vazia'); return; }
@@ -962,10 +1079,10 @@ async function clearList(){
 function emptyHTML(){
   const c=cfg();
   const exemplo=curList==='enxoval'?`<button class="btn btn-ghost" onclick="loadExampleEnxoval()">✨ Ver exemplo</button>`
-    :`<button class="btn btn-ghost" onclick="loadExampleCha()">✨ Ver exemplo</button>`;
+    :`<button class="btn btn-primary" onclick="loadChaPlanejamento()">📋 Carregar planejamento</button><button class="btn btn-ghost" onclick="loadExampleCha()">✨ Ver exemplo</button>`;
   return `<div class="empty"><div class="big">${c.icon}</div><h2>${c.vazioTit}</h2><p>${c.vazioMsg}</p>
     <div class="actions">
-      <button class="btn btn-primary" onclick="openImport()">📥 Subir planilha</button>
+      <button class="btn ${curList==='cha'?'btn-ghost':'btn-primary'}" onclick="openImport()">📥 Subir planilha</button>
       <button class="btn btn-ghost" onclick="openItemModal()">＋ Adicionar item</button>${exemplo}</div></div>`;
 }
 
@@ -1407,7 +1524,7 @@ function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;
 function showModal(id){ document.getElementById(id).classList.add('show'); }
 function closeModal(id){ document.getElementById(id).classList.remove('show');
   if(pendingRemote && !document.querySelector('.overlay.show')){ state=pendingRemote; pendingRemote=null; applyTheme(); render(); toast('Sincronizado 🔄'); } }
-function refreshDatalist(){ const cats=[...new Set([...CATS_DEFAULT, ...state.enxoval.items.map(i=>i.categoria), ...state.cha.items.map(i=>i.categoria)].filter(Boolean))];
+function refreshDatalist(){ const base=curList==='cha'?CATS_CHA:CATS_DEFAULT; const cats=[...new Set([...base, ...state.enxoval.items.map(i=>i.categoria), ...state.cha.items.map(i=>i.categoria)].filter(Boolean))];
   document.getElementById('catlist').innerHTML=cats.map(c=>`<option value="${esc(c)}">`).join(''); }
 let toastTimer;
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2600); }

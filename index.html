@@ -391,6 +391,8 @@
   .login-card input{width:100%;padding:12px 14px;border:1px solid var(--linha);border-radius:12px;font:inherit;background:var(--inp);color:var(--txt);margin-bottom:12px}
   .login-card .btn{width:100%;justify-content:center}
   .login-msg{margin-top:14px;font-size:.86rem;color:var(--ok);font-weight:600;line-height:1.4}
+  .login-or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.76rem;font-weight:700;margin:13px 0}
+  .login-or::before,.login-or::after{content:'';flex:1;height:1px;background:var(--linha)}
 
   /* item clicável */
   .itemname{cursor:pointer}
@@ -436,9 +438,12 @@
   <div class="login-card">
     <div class="login-logo">💙</div>
     <h2>Pedro — acesso do casal</h2>
-    <p>Entre com seu e-mail. Enviamos um <b>link mágico</b> (sem senha). Só os e-mails autorizados acessam os dados.</p>
-    <input id="loginEmail" type="email" placeholder="seu@email.com" autocomplete="email" onkeydown="if(event.key==='Enter')sendMagicLink()">
-    <button id="loginBtn" class="btn btn-primary" onclick="sendMagicLink()">Enviar link de acesso</button>
+    <p>Entre com e-mail e senha. <b>Primeiro acesso?</b> Use o link no e-mail e depois defina sua senha. Só os e-mails autorizados acessam.</p>
+    <input id="loginEmail" type="email" placeholder="seu@email.com" autocomplete="email">
+    <input id="loginPass" type="password" placeholder="senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')signInPassword()">
+    <button id="loginBtn" class="btn btn-primary" onclick="signInPassword()">Entrar</button>
+    <div class="login-or">ou</div>
+    <button id="magicBtn" class="btn btn-ghost" onclick="sendMagicLink()" style="width:100%;justify-content:center">Enviar link de acesso por e-mail</button>
     <div id="loginMsg" class="login-msg"></div>
   </div>
 </div>
@@ -575,6 +580,20 @@
   </div>
 </div>
 
+<!-- Modal definir senha -->
+<div class="overlay" id="senhaOverlay">
+  <div class="modal" style="max-width:420px">
+    <button class="modal-close" onclick="closeModal('senhaOverlay')">×</button>
+    <h2>Definir senha</h2>
+    <div class="desc">Crie ou altere a senha de acesso. Depois você entra direto com e-mail + senha (sem precisar do link no e-mail).</div>
+    <div class="field"><label>Nova senha (mín. 6 caracteres)</label><input id="newPass" type="password" autocomplete="new-password" onkeydown="if(event.key==='Enter')savePassword()"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('senhaOverlay')">Cancelar</button>
+      <button class="btn btn-primary" onclick="savePassword()">Salvar senha</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal aparência -->
 <div class="overlay" id="appearanceOverlay">
   <div class="modal" style="max-width:440px">
@@ -594,7 +613,7 @@
    Hoje: localStorage. Para hospedar/sincronizar online, troque
    só estas duas funções por chamadas fetch() a um backend.
    ============================================================ */
-const BUILD='0623-icons';         // marcador de versão (pra confirmar deploy/cache)
+const BUILD='0623-senha';         // marcador de versão (pra confirmar deploy/cache)
 const STORAGE_KEY='enxoval-bebe-v1';   // mantém a chave; migramos a forma por dentro
 const DOC_ID='pedro';                  // documento compartilhado do casal na nuvem
 const SUPA=(window.SUPA||{url:'',anonKey:''});
@@ -709,6 +728,7 @@ const ICONS={
   sliders:'<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
   database:'<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/>',
   logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+  key:'<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>',
   plus:'<path d="M5 12h14M12 5v14"/>',
   edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
   trash:'<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
@@ -831,15 +851,39 @@ async function startApp(){
 }
 function showLogin(){ const o=document.getElementById('loginOverlay'); if(o) o.classList.add('show'); }
 function hideLogin(){ const o=document.getElementById('loginOverlay'); if(o) o.classList.remove('show'); }
+async function signInPassword(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass=document.getElementById('loginPass').value;
+  const m=document.getElementById('loginMsg');
+  if(!email||!email.includes('@')){ m.style.color='var(--perigo)'; m.textContent='Digite um e-mail válido.'; return; }
+  if(!pass){ m.style.color='var(--perigo)'; m.textContent='Digite a senha.'; return; }
+  const btn=document.getElementById('loginBtn'); btn.disabled=true; btn.textContent='Entrando...';
+  const { error } = await sb.auth.signInWithPassword({ email, password:pass });
+  btn.disabled=false; btn.textContent='Entrar';
+  if(error){ m.style.color='var(--perigo)';
+    m.textContent=/invalid login credentials/i.test(error.message)
+      ? 'E-mail ou senha incorretos. Primeiro acesso? Use "Enviar link de acesso por e-mail" e depois defina uma senha.'
+      : 'Erro: '+error.message; return; }
+  // sucesso -> onAuthStateChange chama startApp
+}
 async function sendMagicLink(){
   const email=document.getElementById('loginEmail').value.trim();
-  if(!email||!email.includes('@')){ toast('Digite um e-mail válido'); return; }
-  const btn=document.getElementById('loginBtn'); btn.disabled=true; btn.textContent='Enviando...';
+  const m=document.getElementById('loginMsg');
+  if(!email||!email.includes('@')){ m.style.color='var(--perigo)'; m.textContent='Digite um e-mail válido.'; return; }
+  const btn=document.getElementById('magicBtn'); btn.disabled=true; btn.textContent='Enviando...';
   const { error } = await sb.auth.signInWithOtp({ email, options:{ emailRedirectTo:location.href.split('#')[0] } });
-  btn.disabled=false; btn.textContent='Enviar link de acesso';
-  if(error){ document.getElementById('loginMsg').style.color='var(--perigo)'; document.getElementById('loginMsg').textContent='Erro: '+error.message; return; }
-  document.getElementById('loginMsg').style.color='var(--ok)';
-  document.getElementById('loginMsg').textContent='📩 Link enviado para '+email+'. Abra o e-mail NESTE aparelho pra entrar.';
+  btn.disabled=false; btn.textContent='Enviar link de acesso por e-mail';
+  if(error){ m.style.color='var(--perigo)'; m.textContent='Erro: '+error.message; return; }
+  m.style.color='var(--ok)';
+  m.textContent='📩 Link enviado para '+email+'. Abra o e-mail NESTE aparelho pra entrar — depois defina uma senha em "Senha".';
+}
+function openSenha(){ document.getElementById('newPass').value=''; showModal('senhaOverlay'); setTimeout(()=>document.getElementById('newPass').focus(),50); }
+async function savePassword(){
+  const p=document.getElementById('newPass').value;
+  if(p.length<6){ toast('A senha precisa de pelo menos 6 caracteres'); return; }
+  const { error } = await sb.auth.updateUser({ password:p });
+  if(error){ toast('Erro: '+error.message); return; }
+  closeModal('senhaOverlay'); toast('Senha definida ✓ — já dá pra entrar com e-mail e senha');
 }
 async function signOut(){ if(sb) await sb.auth.signOut(); session=null; appStarted=false; if(realtimeChan){ sb.removeChannel(realtimeChan); realtimeChan=null; } showLogin(); }
 
@@ -887,7 +931,8 @@ function renderSidebar(){
     `<div class="sb-spacer"></div>
      <button class="navitem" onclick="openAppearance()"><span class="ic">${icon('sliders',20)}</span><span>Aparência<small>tema & cores</small></span></button>
      <button class="navitem" onclick="showModal('backupOverlay')"><span class="ic">${icon('database',20)}</span><span>Backup<small>exportar / importar</small></span></button>`+
-    (CLOUD&&session?`<button class="navitem" onclick="signOut()"><span class="ic">${icon('logout',20)}</span><span>Sair<small>${esc((session.user&&session.user.email)||'')}</small></span></button>`
+    (CLOUD&&session?`<button class="navitem" onclick="openSenha()"><span class="ic">${icon('key',20)}</span><span>Senha<small>definir / alterar</small></span></button>`
+       +`<button class="navitem" onclick="signOut()"><span class="ic">${icon('logout',20)}</span><span>Sair<small>${esc((session.user&&session.user.email)||'')}</small></span></button>`
       :(CLOUD?'':`<button class="navitem" title="Funciona offline" style="opacity:.7"><span class="ic">${icon('database',20)}</span><span>Modo local<small>sem nuvem</small></span></button>`))+
     `<div style="padding:6px 14px;font-size:.64rem;color:var(--muted);opacity:.65">build ${BUILD}</div>`;
 }

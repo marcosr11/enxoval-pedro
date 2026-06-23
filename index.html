@@ -105,6 +105,13 @@
   .acao-tit{font-weight:700}
   .acao-prazo{font-size:.72rem;font-weight:800;color:var(--azul-esc);background:var(--azul-claro);padding:2px 9px;border-radius:99px;white-space:nowrap}
   .acao-obs{font-size:.82rem;color:var(--muted);margin-top:4px;line-height:1.45}
+  /* Lista de convidados (chá) */
+  .conv-sum{font-size:.84rem;color:var(--muted);margin:2px 0 10px;font-weight:600}
+  .conv-row{display:flex;align-items:center;gap:12px;padding:9px 12px;border:1px solid var(--linha);border-radius:10px;margin-bottom:7px}
+  .conv-row.sent{background:var(--ok-bg)}
+  .conv-nome{flex:1;font-weight:650;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .conv-tag{display:flex;align-items:center;gap:5px;font-size:.77rem;color:var(--muted);font-weight:600;white-space:nowrap;cursor:pointer}
+  .check.sm{width:17px;height:17px}
   .budget-row{display:flex;align-items:center;gap:6px;margin-top:2px}
   .budget-row input{width:120px;border:1px solid var(--linha);background:var(--inp);color:var(--txt);
     border-radius:8px;padding:5px 8px;font:inherit;font-weight:700;font-size:1rem}
@@ -550,6 +557,22 @@
   </div>
 </div>
 
+<!-- Modal lista de convidados (chá) -->
+<div class="overlay" id="convidadosOverlay">
+  <div class="modal" style="max-width:600px">
+    <button class="modal-close" onclick="closeModal('convidadosOverlay')">×</button>
+    <h2>👥 Lista de convidados</h2>
+    <div class="desc" id="conv_rec"></div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:6px">
+      <input id="conv_nome" placeholder="Nome do convidado" onkeydown="if(event.key==='Enter')addConvidado()"
+        style="padding:10px 12px;border:1px solid var(--linha);border-radius:11px;font:inherit;background:var(--inp);color:var(--txt)">
+      <button class="btn btn-primary btn-sm" onclick="addConvidado()">＋ Adicionar</button>
+    </div>
+    <div class="conv-sum" id="conv_sum"></div>
+    <div id="conv_list"></div>
+  </div>
+</div>
+
 <!-- Modal aparência -->
 <div class="overlay" id="appearanceOverlay">
   <div class="modal" style="max-width:440px">
@@ -569,7 +592,7 @@
    Hoje: localStorage. Para hospedar/sincronizar online, troque
    só estas duas funções por chamadas fetch() a um backend.
    ============================================================ */
-const BUILD='0623-cha-festa';         // marcador de versão (pra confirmar deploy/cache)
+const BUILD='0623-convidados';         // marcador de versão (pra confirmar deploy/cache)
 const STORAGE_KEY='enxoval-bebe-v1';   // mantém a chave; migramos a forma por dentro
 const DOC_ID='pedro';                  // documento compartilhado do casal na nuvem
 const SUPA=(window.SUPA||{url:'',anonKey:''});
@@ -582,7 +605,8 @@ const LocalStore={
   save(s){ localStorage.setItem(STORAGE_KEY,JSON.stringify(s)); }
 };
 function normalizeState(s){ s.enxoval.items=(s.enxoval.items||[]).map(normalizeItem); s.cha.items=(s.cha.items||[]).map(normalizeItem);
-  s.cha.acoes=(s.cha.acoes||[]).map(a=>({id:a.id||uid(), titulo:a.titulo||'', prazo:a.prazo||'', obs:a.obs||'', feito:!!a.feito})); return s; }
+  s.cha.acoes=(s.cha.acoes||[]).map(a=>({id:a.id||uid(), titulo:a.titulo||'', prazo:a.prazo||'', obs:a.obs||'', feito:!!a.feito}));
+  s.cha.convidadosList=(s.cha.convidadosList||[]).map(g=>({id:g.id||uid(), nome:g.nome||'', conviteEnviado:!!g.conviteEnviado, confirmou:!!g.confirmou})); return s; }
 
 /* ---- Nuvem (Supabase) ---- */
 async function cloudLoad(){
@@ -610,7 +634,7 @@ function blankState(){
   return { version:2,
     baby:{ nome:'Pedro', gestRefDate:'', gestWeeks:0, gestDays:0, dppOverride:'', exames:[] },
     enxoval:{ items:[], budget:0 },
-    cha:{ items:[], budget:0, festaDate:'', local:'', convidados:0, horario:'', acoes:[] },
+    cha:{ items:[], budget:0, festaDate:'', local:'', convidados:0, horario:'', acoes:[], convidadosList:[] },
     theme:{...THEME_DEFAULT}, updatedAt:null };
 }
 /* migração: v1 tinha {items, budget} no topo -> vira enxoval */
@@ -654,6 +678,7 @@ let state=blankState();
 let curList='enxoval';                       // qual lista a view de lista mostra
 let ui={ view:'inicio', listTab:'lista', q:'', cat:'', prio:'', status:'', sort:'cat', focus:'' };
 const CARO=800;   // limite "item caro" para o insight (ajustável)
+const CONVITE_ANTEC=28;  // enviar convites X dias antes da festa (4 semanas, conforme cronograma)
 let editingId=null, pendingImport=null;
 
 const LIST_CFG={
@@ -974,19 +999,27 @@ function listViewHTML(){
     + toolbarHTML() + `<div id="listArea">` + listHTML() + `</div>`;
 }
 /* ---------------- Chá: detalhes da festa + planos de ação ---------------- */
+function dataConviteRec(){ const fd=parseDate(state.cha.festaDate); return fd?addDays(fd,-CONVITE_ANTEC):null; }
 function festaPanelHTML(){
   const ch=state.cha, fd=ch.festaDate?parseDate(ch.festaDate):null, t=totalsOf(ch);
   const cpp=(ch.convidados>0)?t.est/ch.convidados:0;
+  const gl=ch.convidadosList||[], env=gl.filter(g=>g.conviteEnviado).length;
+  const dc=dataConviteRec();
   return `<div class="panel">
-    <h2>🎉 Detalhes da festa <button class="btn btn-soft btn-sm" style="margin-left:auto" onclick="loadChaPlanejamento()" title="Preencher com o planejamento pronto">📋 Carregar planejamento</button></h2>
+    <h2>🎉 Detalhes da festa
+      <span style="margin-left:auto;display:flex;gap:8px">
+        <button class="btn btn-soft btn-sm" onclick="openConvidados()">👥 Convidados${gl.length?` (${env}/${gl.length})`:''}</button>
+        <button class="btn btn-soft btn-sm" onclick="loadChaPlanejamento()" title="Preencher com o planejamento pronto">📋 Carregar planejamento</button>
+      </span></h2>
     <div class="formgrid">
       <div class="field"><label>Local da festa</label><input value="${esc(ch.local||'')}" placeholder="Ex.: Salão do prédio" onchange="updCha('local',this.value)"></div>
       <div class="field"><label>Data da festa</label><input type="date" value="${esc(ch.festaDate||'')}" onchange="updCha('festaDate',this.value)"></div>
-      <div class="field"><label>Convidados</label><input type="number" min="0" value="${ch.convidados||''}" placeholder="Ex.: 33" onchange="updChaNum('convidados',this.value)"></div>
+      <div class="field"><label>Convidados (meta)</label><input type="number" min="0" value="${ch.convidados||''}" placeholder="Ex.: 33" onchange="updChaNum('convidados',this.value)"></div>
       <div class="field"><label>Horário</label><input value="${esc(ch.horario||'')}" placeholder="Ex.: Tarde (lanche)" onchange="updCha('horario',this.value)"></div>
     </div>
     <div class="hint" style="margin-top:13px;display:flex;gap:16px;flex-wrap:wrap;color:var(--muted)">
       ${fd?`<span>⏳ <b style="color:var(--azul-esc)">${countdownTxt(daysBetween(fd,startToday()))}</b> p/ a festa · ${fmtDate(fd)}</span>`:''}
+      ${dc?`<span>📨 enviar convites até <b style="color:var(--txt)">${fmtDate(dc)}</b></span>`:''}
       ${ch.convidados?`<span>👥 ${ch.convidados} convidados</span>`:''}
       ${cpp?`<span>🧮 custo médio <b style="color:var(--txt)">${fmtBRL(cpp)}</b>/pessoa</span>`:''}
     </div>
@@ -1069,6 +1102,32 @@ async function loadChaPlanejamento(){
   ];
   curList='cha'; await persist(); render(); animateView(); toast('Planejamento do chá carregado 🎉');
 }
+/* ---- Lista de convidados (chá) ---- */
+function openConvidados(){ renderConvidados(); showModal('convidadosOverlay'); setTimeout(()=>document.getElementById('conv_nome').focus(),50); }
+function renderConvidados(){
+  const fd=parseDate(state.cha.festaDate), dc=dataConviteRec();
+  const rec=document.getElementById('conv_rec');
+  if(fd&&dc){ const dias=daysBetween(dc,startToday());
+    rec.innerHTML=`📨 Recomendado enviar os convites até <b style="color:var(--azul-esc)">${fmtDate(dc)}</b> — ${CONVITE_ANTEC} dias antes da festa (${fmtDate(fd)})`
+      +(dias<0?` · <b style="color:var(--perigo)">já passou!</b>`:dias===0?` · <b>é hoje!</b>`:` · faltam ${dias} dias`);
+  } else rec.innerHTML='Defina a <b>data da festa</b> nos detalhes para calcularmos a melhor data de enviar os convites.';
+  const list=state.cha.convidadosList||[];
+  const env=list.filter(g=>g.conviteEnviado).length, conf=list.filter(g=>g.confirmou).length;
+  document.getElementById('conv_sum').textContent=list.length?`${list.length} convidados · ${env} convite(s) enviado(s) · ${conf} confirmaram`:'';
+  document.getElementById('conv_list').innerHTML=list.length? list.map(g=>`
+    <div class="conv-row ${g.conviteEnviado?'sent':''}">
+      <span class="conv-nome">${esc(g.nome)}</span>
+      <label class="conv-tag"><input type="checkbox" class="check sm" ${g.conviteEnviado?'checked':''} onchange="toggleConv('${g.id}','conviteEnviado',this.checked)"> convite</label>
+      <label class="conv-tag"><input type="checkbox" class="check sm" ${g.confirmou?'checked':''} onchange="toggleConv('${g.id}','confirmou',this.checked)"> confirmou</label>
+      <button class="btn btn-icon" onclick="removeConvidado('${g.id}')" title="Remover">🗑️</button>
+    </div>`).join('') : '<div class="hint" style="color:var(--muted)">Nenhum convidado ainda. Adicione os nomes acima.</div>';
+}
+function addConvidado(){ const i=document.getElementById('conv_nome'), nome=i.value.trim(); if(!nome)return;
+  if(!state.cha.convidadosList) state.cha.convidadosList=[];
+  state.cha.convidadosList.push({id:uid(),nome,conviteEnviado:false,confirmou:false});
+  i.value=''; persist(); render(); renderConvidados(); i.focus(); }
+function toggleConv(id,field,val){ const g=(state.cha.convidadosList||[]).find(x=>x.id===id); if(!g)return; g[field]=val; persist(); render(); renderConvidados(); }
+function removeConvidado(id){ state.cha.convidadosList=(state.cha.convidadosList||[]).filter(x=>x.id!==id); persist(); render(); renderConvidados(); }
 async function clearList(){
   const c=cfg(), n=LD().items.length;
   if(!n){ toast('A lista já está vazia'); return; }

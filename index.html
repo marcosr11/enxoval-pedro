@@ -34,6 +34,8 @@
     transition:background .2s,color .2s;
   }
   a{color:var(--azul-esc)}
+  .ico{display:inline-block;vertical-align:-.18em;flex-shrink:0}
+  h1 .ico,h2 .ico{vertical-align:-.12em}
   button,.btn{font:inherit;cursor:pointer;border:none;border-radius:11px;padding:10px 15px;font-weight:650;
     font-size:.9rem;display:inline-flex;align-items:center;gap:7px;transition:.15s;white-space:nowrap}
   .btn-primary{background:var(--azul);color:#fff;box-shadow:var(--sombra-sm)}
@@ -506,7 +508,7 @@
 
     <!-- LOJAS MONITORADAS (campo destacado) -->
     <div class="lojas-box">
-      <div class="lojas-title">🔗 Lojas que estamos monitorando
+      <div class="lojas-title"><svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-.2em"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Lojas que estamos monitorando
         <span>Guarde o link e o preço de cada visita — a gente mostra se subiu ou caiu.</span></div>
       <div id="lojasList"></div>
       <div class="loja-form">
@@ -519,8 +521,8 @@
 
     <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;margin-top:14px"><input type="checkbox" id="f_comprado" class="check"> <span id="f_compradoLabel">Já comprado</span></label>
     <div class="modal-actions">
-      <button class="btn btn-ghost" id="itemDeleteBtn" onclick="deleteCurrentItem()">🗑️ Excluir</button>
-      <button class="btn btn-ghost" id="itemDupBtn" onclick="duplicateItem(editingId)" style="margin-right:auto">⧉ Duplicar</button>
+      <button class="btn btn-ghost" id="itemDeleteBtn" onclick="deleteCurrentItem()"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Excluir</button>
+      <button class="btn btn-ghost" id="itemDupBtn" onclick="duplicateItem(editingId)" style="margin-right:auto"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Duplicar</button>
       <button class="btn btn-ghost" onclick="closeModal('itemOverlay')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveItemModal()">Salvar</button>
     </div>
@@ -533,9 +535,9 @@
     <button class="modal-close" onclick="closeModal('backupOverlay')">×</button>
     <h2>Backup & dados</h2>
     <div class="desc">Tudo fica salvo neste navegador. Exporte de vez em quando pra não perder e passar pro outro celular.</div>
-    <button class="btn btn-soft stack-btn" onclick="exportJSON()">⬇️ Exportar backup completo (JSON)</button>
-    <button class="btn btn-soft stack-btn" onclick="document.getElementById('importJsonFile').click()">⬆️ Importar backup (JSON)</button>
-    <button class="btn btn-soft stack-btn" onclick="exportCSV()">📄 Exportar lista atual para CSV</button>
+    <button class="btn btn-soft stack-btn" onclick="exportJSON()"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg> Exportar backup completo (JSON)</button>
+    <button class="btn btn-soft stack-btn" onclick="document.getElementById('importJsonFile').click()"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg> Importar backup (JSON)</button>
+    <button class="btn btn-soft stack-btn" onclick="exportCSV()"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg> Exportar lista atual para CSV</button>
   </div>
 </div>
 
@@ -550,7 +552,7 @@
     <div class="field"><label>Empresas / observações</label><textarea id="a_obs" rows="3" placeholder="Possíveis fornecedores, valores, links, decisões..."></textarea></div>
     <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer"><input type="checkbox" id="a_feito" class="check"> Concluído</label>
     <div class="modal-actions">
-      <button class="btn btn-ghost" id="acaoDelBtn" onclick="deleteAcao()" style="margin-right:auto">🗑️ Excluir</button>
+      <button class="btn btn-ghost" id="acaoDelBtn" onclick="deleteAcao()" style="margin-right:auto"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Excluir</button>
       <button class="btn btn-ghost" onclick="closeModal('acaoOverlay')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveAcao()">Salvar</button>
     </div>
@@ -592,7 +594,7 @@
    Hoje: localStorage. Para hospedar/sincronizar online, troque
    só estas duas funções por chamadas fetch() a um backend.
    ============================================================ */
-const BUILD='0623-convidados';         // marcador de versão (pra confirmar deploy/cache)
+const BUILD='0623-icons';         // marcador de versão (pra confirmar deploy/cache)
 const STORAGE_KEY='enxoval-bebe-v1';   // mantém a chave; migramos a forma por dentro
 const DOC_ID='pedro';                  // documento compartilhado do casal na nuvem
 const SUPA=(window.SUPA||{url:'',anonKey:''});
@@ -690,14 +692,42 @@ const LIST_CFG={
     vazioTit:'Bora montar o chá de fraldas!', vazioMsg:'Adicione o que os convidados podem trazer e os investimentos da festa (decoração, bolo, salgados...). Controle o orçamento aqui também.' }
 };
 const VIEWS=[
-  {key:'inicio',label:'Início',sub:'gestação',icon:'🏠'},
-  {key:'pedro',label:'Pedro',sub:'dados & exames',icon:'👶'},
-  {key:'enxoval',label:'Enxoval',sub:'checklist',icon:'🧸'},
-  {key:'cha',label:'Chá de fraldas',sub:'festa',icon:'🎉'},
+  {key:'inicio',label:'Início',sub:'gestação',ic:'home'},
+  {key:'pedro',label:'Pedro',sub:'dados & exames',ic:'heart'},
+  {key:'enxoval',label:'Enxoval',sub:'checklist',ic:'list'},
+  {key:'cha',label:'Chá de fraldas',sub:'festa',ic:'gift'},
 ];
 
 const CATS_DEFAULT=['Roupinhas','Higiene','Quarto','Alimentação','Passeio','Banho','Saúde','Brinquedos','Maternidade'];
 const CATS_CHA=['Buffet','Bebidas','Decoração','Foto','Convites','Lembrancinhas','Utensílios','Reserva'];
+/* ---------- Ícones SVG (estilo Lucide; herdam a cor via currentColor) ---------- */
+const ICONS={
+  home:'<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>',
+  heart:'<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
+  list:'<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/>',
+  gift:'<rect x="3" y="8" width="18" height="14" rx="1"/><path d="M12 8v14M3 12h18"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8M16.5 8a2.5 2.5 0 0 0 0-5C13 3 12 8 12 8"/>',
+  sliders:'<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
+  database:'<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/>',
+  logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+  plus:'<path d="M5 12h14M12 5v14"/>',
+  edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  trash:'<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>',
+  download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+  fileText:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>',
+  clipboard:'<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+  calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  link:'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  box:'<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>',
+  checkCircle:'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>',
+  filter:'<path d="M22 3H2l8 9.46V19l4 2v-8.54z"/>',
+  stethoscope:'<path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/>',
+  party:'<path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01M22 8h.01M15 2h.01M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17"/><path d="M11 2 9.85 2.15c-.86.16-1.54.85-1.62 1.71a2.91 2.91 0 0 1-2.7 2.65L4 6.6"/>'
+};
+function icon(name,size){ const s=size||18; return `<svg class="ico" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]||''}</svg>`; }
 const FIELDS=[
   {key:'categoria',label:'Categoria',aliases:['categoria','cat','grupo','setor','tipo']},
   {key:'item',label:'Item',aliases:['item','produto','descricao','nome','o que comprar','oque comprar','itens']},
@@ -853,12 +883,12 @@ function renderSidebar(){
   document.getElementById('sidebar').innerHTML=
     `<div class="sb-brand"><div class="sb-logo">💙</div><div><b>Pedro</b><span>nosso filho</span></div></div>`+
     VIEWS.map(v=>`<button class="navitem ${ui.view===v.key?'active':''}" onclick="setView('${v.key}')">
-      <span class="ic">${v.icon}</span><span>${v.label}<small>${v.sub}</small></span></button>`).join('')+
+      <span class="ic">${icon(v.ic,20)}</span><span>${v.label}<small>${v.sub}</small></span></button>`).join('')+
     `<div class="sb-spacer"></div>
-     <button class="navitem" onclick="openAppearance()"><span class="ic">🎨</span><span>Aparência<small>tema & cores</small></span></button>
-     <button class="navitem" onclick="showModal('backupOverlay')"><span class="ic">💾</span><span>Backup<small>exportar / importar</small></span></button>`+
-    (CLOUD&&session?`<button class="navitem" onclick="signOut()"><span class="ic">🚪</span><span>Sair<small>${esc((session.user&&session.user.email)||'')}</small></span></button>`
-      :(CLOUD?'':`<button class="navitem" title="Funciona offline" style="opacity:.7"><span class="ic">📴</span><span>Modo local<small>sem nuvem</small></span></button>`))+
+     <button class="navitem" onclick="openAppearance()"><span class="ic">${icon('sliders',20)}</span><span>Aparência<small>tema & cores</small></span></button>
+     <button class="navitem" onclick="showModal('backupOverlay')"><span class="ic">${icon('database',20)}</span><span>Backup<small>exportar / importar</small></span></button>`+
+    (CLOUD&&session?`<button class="navitem" onclick="signOut()"><span class="ic">${icon('logout',20)}</span><span>Sair<small>${esc((session.user&&session.user.email)||'')}</small></span></button>`
+      :(CLOUD?'':`<button class="navitem" title="Funciona offline" style="opacity:.7"><span class="ic">${icon('database',20)}</span><span>Modo local<small>sem nuvem</small></span></button>`))+
     `<div style="padding:6px 14px;font-size:.64rem;color:var(--muted);opacity:.65">build ${BUILD}</div>`;
 }
 
@@ -913,7 +943,7 @@ function countdownTxt(days){ if(days<0) return `há ${-days} dia${days===-1?'':'
 function proximosExamesPanel(){
   const today=startToday(); const ex=examesOrdenados().filter(e=>daysBetween(e.d,today)>=-1);
   if(!ex.length) return '';
-  return `<div class="panel"><h2>🩺 Próximos exames</h2>
+  return `<div class="panel"><h2>${icon('stethoscope',18)} Próximos exames</h2>
     <div class="examlist">${ex.slice(0,6).map(e=>`<div class="examitem">
       <span class="ed">${esc(e.nome)}</span>
       <span class="dt">${fmtDate(e.d)}${e.hora?' • '+esc(e.hora):''}</span>
@@ -948,7 +978,7 @@ function pedroHTML(){
   </div>
 
   <div class="panel">
-    <h2>🩺 Exames com a obstetra</h2>
+    <h2>${icon('stethoscope',18)} Exames com a obstetra</h2>
     <div class="examrow">
       <input id="ex_nome" placeholder="Nome do exame / consulta" class="field" style="padding:10px 12px;border:1px solid var(--linha);border-radius:11px">
       <input id="ex_data" type="date" style="padding:10px 12px;border:1px solid var(--linha);border-radius:11px">
@@ -960,7 +990,7 @@ function pedroHTML(){
         <span class="ed">${esc(e.nome)}</span>
         <span class="dt">${fmtDate(e.d)}${e.hora?' • '+esc(e.hora):''}</span>
         <span class="cd">${countdownTxt(daysBetween(e.d,startToday()))}</span>
-        <button class="btn btn-icon" onclick="removeExam('${e.id}')" title="Remover">🗑️</button></div>`).join('')
+        <button class="btn btn-icon" onclick="removeExam('${e.id}')" title="Remover">${icon('trash',16)}</button></div>`).join('')
         :`<div class="hint" style="color:var(--muted)">Nenhum exame cadastrado ainda.</div>`}
     </div>
   </div>`;
@@ -987,11 +1017,11 @@ async function removeExam(id){ state.baby.exames=state.baby.exames.filter(e=>e.i
 /* ---------------- LISTA (Enxoval / Chá) ---------------- */
 function listViewHTML(){
   const c=cfg(), L=LD();
-  const limpar=L.items.length?`<button class="btn btn-ghost" onclick="clearList()" title="Apagar todos os itens desta lista">🗑️ Limpar</button>`:'';
+  const limpar=L.items.length?`<button class="btn btn-ghost" onclick="clearList()" title="Apagar todos os itens desta lista">${icon('trash',16)} Limpar</button>`:'';
   const actions=`<div class="actions">
     ${limpar}
-    <button class="btn btn-soft" onclick="openImport()">📥 Subir planilha</button>
-    <button class="btn btn-primary" onclick="openItemModal()">＋ Item</button></div>`;
+    <button class="btn btn-soft" onclick="openImport()">${icon('upload',16)} Subir planilha</button>
+    <button class="btn btn-primary" onclick="openItemModal()">${icon('plus',16)} Item</button></div>`;
   let head=`<div class="viewhead"><div><h1>${c.icon} ${c.titulo}</h1><div class="sub">${c.sub}</div></div><div class="spacer"></div>${actions}</div>`;
   if(curList==='cha') head+=festaPanelHTML()+planosHTML();   // detalhes da festa + planos de ação
   if(!L.items.length) return head+emptyHTML();
@@ -1008,8 +1038,8 @@ function festaPanelHTML(){
   return `<div class="panel">
     <h2>🎉 Detalhes da festa
       <span style="margin-left:auto;display:flex;gap:8px">
-        <button class="btn btn-soft btn-sm" onclick="openConvidados()">👥 Convidados${gl.length?` (${env}/${gl.length})`:''}</button>
-        <button class="btn btn-soft btn-sm" onclick="loadChaPlanejamento()" title="Preencher com o planejamento pronto">📋 Carregar planejamento</button>
+        <button class="btn btn-soft btn-sm" onclick="openConvidados()">${icon('users',16)} Convidados${gl.length?` (${env}/${gl.length})`:''}</button>
+        <button class="btn btn-soft btn-sm" onclick="loadChaPlanejamento()" title="Preencher com o planejamento pronto">${icon('clipboard',16)} Carregar planejamento</button>
       </span></h2>
     <div class="formgrid">
       <div class="field"><label>Local da festa</label><input value="${esc(ch.local||'')}" placeholder="Ex.: Salão do prédio" onchange="updCha('local',this.value)"></div>
@@ -1033,12 +1063,12 @@ function planosHTML(){
         <div class="acao-top"><span class="acao-tit">${esc(a.titulo)}</span>${a.prazo?`<span class="acao-prazo">${esc(a.prazo)}</span>`:''}</div>
         ${a.obs?`<div class="acao-obs">${esc(a.obs)}</div>`:''}
       </div>
-      <button class="btn btn-icon" onclick="editAcao('${a.id}')" title="Editar">✏️</button>
-      <button class="btn btn-icon" onclick="removeAcao('${a.id}')" title="Remover">🗑️</button>
+      <button class="btn btn-icon" onclick="editAcao('${a.id}')" title="Editar">${icon('edit',16)}</button>
+      <button class="btn btn-icon" onclick="removeAcao('${a.id}')" title="Remover">${icon('trash',16)}</button>
     </div>`).join('');
   return `<div class="panel">
-    <h2>✅ Planos de ação ${acoes.length?`<span style="font-weight:500;font-size:.82rem;color:var(--muted)">${done}/${acoes.length} feitos</span>`:''}
-      <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="addAcao()">＋ Plano</button></h2>
+    <h2>${icon('checkCircle',18)} Planos de ação ${acoes.length?`<span style="font-weight:500;font-size:.82rem;color:var(--muted)">${done}/${acoes.length} feitos</span>`:''}
+      <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="addAcao()">${icon('plus',16)} Plano</button></h2>
     <div class="acoes">${rows||'<div class="hint" style="color:var(--muted)">Nenhum plano ainda. Adicione tarefas como "Fechar buffet", "Pedir orçamentos", "Definir tema"…</div>'}</div>
   </div>`;
 }
@@ -1119,7 +1149,7 @@ function renderConvidados(){
       <span class="conv-nome">${esc(g.nome)}</span>
       <label class="conv-tag"><input type="checkbox" class="check sm" ${g.conviteEnviado?'checked':''} onchange="toggleConv('${g.id}','conviteEnviado',this.checked)"> convite</label>
       <label class="conv-tag"><input type="checkbox" class="check sm" ${g.confirmou?'checked':''} onchange="toggleConv('${g.id}','confirmou',this.checked)"> confirmou</label>
-      <button class="btn btn-icon" onclick="removeConvidado('${g.id}')" title="Remover">🗑️</button>
+      <button class="btn btn-icon" onclick="removeConvidado('${g.id}')" title="Remover">${icon('trash',16)}</button>
     </div>`).join('') : '<div class="hint" style="color:var(--muted)">Nenhum convidado ainda. Adicione os nomes acima.</div>';
 }
 function addConvidado(){ const i=document.getElementById('conv_nome'), nome=i.value.trim(); if(!nome)return;
@@ -1138,11 +1168,11 @@ async function clearList(){
 function emptyHTML(){
   const c=cfg();
   const exemplo=curList==='enxoval'?`<button class="btn btn-ghost" onclick="loadExampleEnxoval()">✨ Ver exemplo</button>`
-    :`<button class="btn btn-primary" onclick="loadChaPlanejamento()">📋 Carregar planejamento</button><button class="btn btn-ghost" onclick="loadExampleCha()">✨ Ver exemplo</button>`;
+    :`<button class="btn btn-primary" onclick="loadChaPlanejamento()">${icon('clipboard',16)} Carregar planejamento</button><button class="btn btn-ghost" onclick="loadExampleCha()">✨ Ver exemplo</button>`;
   return `<div class="empty"><div class="big">${c.icon}</div><h2>${c.vazioTit}</h2><p>${c.vazioMsg}</p>
     <div class="actions">
-      <button class="btn ${curList==='cha'?'btn-ghost':'btn-primary'}" onclick="openImport()">📥 Subir planilha</button>
-      <button class="btn btn-ghost" onclick="openItemModal()">＋ Adicionar item</button>${exemplo}</div></div>`;
+      <button class="btn ${curList==='cha'?'btn-ghost':'btn-primary'}" onclick="openImport()">${icon('upload',16)} Subir planilha</button>
+      <button class="btn btn-ghost" onclick="openItemModal()">${icon('plus',16)} Adicionar item</button>${exemplo}</div></div>`;
 }
 
 function totalsOf(L){
@@ -1175,7 +1205,7 @@ function categoriesHTML(){
   const L=LD(), map={};
   for(const it of L.items){ const c=it.categoria||'Sem categoria'; (map[c]=map[c]||{tot:0,ok:0})['tot']++; if(it.comprado) map[c].ok++; }
   const cats=Object.keys(map).sort(); if(cats.length<=1) return '';
-  return `<div class="panel"><h2>📦 Progresso por categoria</h2><div class="catgrid">${cats.map(c=>{
+  return `<div class="panel"><h2>${icon('box',18)} Progresso por categoria</h2><div class="catgrid">${cats.map(c=>{
     const m=map[c],pct=Math.round(m.ok/m.tot*100);
     return `<div class="catrow"><div class="catname"><span>${esc(c)}</span><span>${m.ok}/${m.tot}</span></div><div class="bar"><i style="width:${pct}%"></i></div></div>`;
   }).join('')}</div></div>`;
@@ -1278,7 +1308,7 @@ function listHTML(){
   const countBar=`<div style="margin:0 2px 10px;color:var(--muted);font-size:.82rem">Mostrando <b>${arr.length}</b> de ${all} ${all===1?'item':'itens'}${anyFilter()?` <a href="#" onclick="clearFilters();return false">· limpar filtros</a>`:''}</div>`;
   if(!arr.length) return countBar+`<div class="empty" style="padding:40px"><div class="big">🔍</div><p>Nenhum item com esses filtros.</p>
     <div class="actions"><button class="btn btn-ghost" onclick="clearFilters()">✕ Limpar filtros</button></div></div>`;
-  const ind=it=>`${it.lojas&&it.lojas.length?`<span class="mini-tag" title="lojas monitoradas">🔗 ${it.lojas.length}</span>`:''}${it.descricao?`<span class="mini-tag" title="tem descrição">📝</span>`:''}`;
+  const ind=it=>`${it.lojas&&it.lojas.length?`<span class="mini-tag" title="lojas monitoradas">${icon('link',13)} ${it.lojas.length}</span>`:''}${it.descricao?`<span class="mini-tag" title="tem descrição">${icon('fileText',13)}</span>`:''}`;
   const rows=arr.map(it=>{ const p=it.prioridade;
     return `<tr class="${it.comprado?'done':''}">
       <td><input type="checkbox" class="check" ${it.comprado?'checked':''} onchange="toggleDone('${it.id}',this.checked)"></td>
@@ -1290,7 +1320,7 @@ function listHTML(){
       <td>${whenBadge(it)}</td>
       <td class="num"><input class="cellinput qty" type="number" min="0" value="${it.qtdComprada||''}" placeholder="0" onchange="updField('${it.id}','qtdComprada',this.value)"></td>
       <td class="num"><span class="money-in"><i>R$</i><input class="cellinput money ${it.valorReal?(it.comprado?'has-val paid':'has-val'):''}" inputmode="decimal" value="${it.valorReal?esc(fmtNum2(it.valorReal)):''}" placeholder="0,00" onchange="updField('${it.id}','valorReal',this.value)"></span></td>
-      <td style="white-space:nowrap"><button class="btn btn-icon" onclick="duplicateItem('${it.id}')" title="Duplicar">⧉</button><button class="btn btn-icon" onclick="openItemModal('${it.id}')" title="Editar">✏️</button></td></tr>`;
+      <td style="white-space:nowrap"><button class="btn btn-icon" onclick="duplicateItem('${it.id}')" title="Duplicar">${icon('copy',16)}</button><button class="btn btn-icon" onclick="openItemModal('${it.id}')" title="Editar">${icon('edit',16)}</button></td></tr>`;
   }).join('');
   const desktop=`<div class="tablewrap desktop-table"><table><thead><tr>
     <th>OK</th><th>Item</th><th>Prior.</th><th class="num">Alvo</th><th class="num">Preço un</th><th class="num">Subtotal</th>
@@ -1301,7 +1331,7 @@ function listHTML(){
       <div class="mc-top"><input type="checkbox" class="check" ${it.comprado?'checked':''} onchange="toggleDone('${it.id}',this.checked)">
         <div class="mc-title"><div class="itemname" onclick="openItemModal('${it.id}')">${esc(it.item||'—')}</div>
           <div class="mc-meta">${it.categoria?`<span class="badge b-cat">${esc(it.categoria)}</span>`:''}<span class="badge b-${p}">${p[0].toUpperCase()+p.slice(1)}</span>${whenBadge(it)}${ind(it)}</div></div>
-        <button class="btn btn-icon" onclick="duplicateItem('${it.id}')" title="Duplicar">⧉</button><button class="btn btn-icon" onclick="openItemModal('${it.id}')">✏️</button></div>
+        <button class="btn btn-icon" onclick="duplicateItem('${it.id}')" title="Duplicar">${icon('copy',16)}</button><button class="btn btn-icon" onclick="openItemModal('${it.id}')" title="Editar">${icon('edit',16)}</button></div>
       <div class="mc-meta" style="margin-top:8px;color:var(--muted);font-size:.84rem">Alvo ${it.qtdAlvo||0} · ${it.precoEstimado?fmtBRL(it.precoEstimado)+'/un':'sem preço'} · Subtotal ${fmtBRL(subtotal(it))}</div>
       <div class="mc-grid">
         <div><label>Qtd</label><input class="cellinput qty" style="max-width:none" type="number" min="0" value="${it.qtdComprada||''}" placeholder="0" onchange="updField('${it.id}','qtdComprada',this.value)"></div>
@@ -1431,7 +1461,7 @@ function renderLojas(){
     const link=l.url?`<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(titulo)} ↗</a>`:`<span style="font-weight:700">${esc(titulo)}</span>`;
     const hist=ps.length?`<div class="loja-hist">histórico: ${ps.map(p=>`${fmtBRL(p.valor)}${p.data?' ('+(parseDate(p.data)?parseDate(p.data).toLocaleDateString('pt-BR'):p.data)+')':''}`).join(' → ')}</div>`:'';
     return `<div class="loja">
-      <div class="loja-head">${link}<button type="button" class="btn btn-icon rm" onclick="removeLoja('${l.id}')" title="Remover">🗑️</button></div>
+      <div class="loja-head">${link}<button type="button" class="btn btn-icon rm" onclick="removeLoja('${l.id}')" title="Remover">${icon('trash',16)}</button></div>
       <div class="loja-price">${cur?`<span class="big">${fmtBRL(cur.valor)}</span>`:'<span class="big" style="color:var(--muted)">sem preço</span>'} ${delta}
         ${cur&&cur.data?`<span style="font-size:.74rem;color:var(--muted)">visto em ${parseDate(cur.data)?parseDate(cur.data).toLocaleDateString('pt-BR'):cur.data}</span>`:''}</div>
       ${hist}

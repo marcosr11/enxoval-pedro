@@ -84,6 +84,16 @@
   .bar{height:8px;border-radius:99px;background:var(--linha);overflow:hidden;margin-top:9px}
   .bar > i{display:block;height:100%;border-radius:99px;background:var(--ok);transition:width .4s}
   .card.accent .bar{background:rgba(255,255,255,.28)} .card.accent .bar > i{background:#fff}
+  /* Insights / foco rápido */
+  .insights{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .ins-chip{display:inline-flex;align-items:center;gap:8px;padding:11px 15px;border-radius:14px;font-size:.88rem;font-weight:600;
+    background:var(--card);box-shadow:var(--sombra-sm);border:1.5px solid transparent;cursor:pointer;transition:.16s}
+  .ins-chip:hover{transform:translateY(-2px);box-shadow:var(--sombra)}
+  .ins-chip .ic{font-size:1.05rem}
+  .ins-chip b{font-weight:800}
+  .ins-chip .txt{color:var(--txt);font-weight:600}
+  .ins-chip.on{border-color:currentColor;background:color-mix(in srgb,currentColor 12%,var(--card))}
+  .ins-danger{color:var(--perigo)} .ins-warn{color:var(--aviso)} .ins-info{color:var(--azul-esc)} .ins-muted{color:var(--muted)}
   .budget-row{display:flex;align-items:center;gap:6px;margin-top:2px}
   .budget-row input{width:120px;border:1px solid var(--linha);background:var(--inp);color:var(--txt);
     border-radius:8px;padding:5px 8px;font:inherit;font-weight:700;font-size:1rem}
@@ -530,7 +540,7 @@
    Hoje: localStorage. Para hospedar/sincronizar online, troque
    só estas duas funções por chamadas fetch() a um backend.
    ============================================================ */
-const BUILD='0623-tabela2';         // marcador de versão (pra confirmar deploy/cache)
+const BUILD='0623-insights';         // marcador de versão (pra confirmar deploy/cache)
 const STORAGE_KEY='enxoval-bebe-v1';   // mantém a chave; migramos a forma por dentro
 const DOC_ID='pedro';                  // documento compartilhado do casal na nuvem
 const SUPA=(window.SUPA||{url:'',anonKey:''});
@@ -612,7 +622,8 @@ function applyTheme(){
 /* ---------- Estado em memória ---------- */
 let state=blankState();
 let curList='enxoval';                       // qual lista a view de lista mostra
-let ui={ view:'inicio', listTab:'lista', q:'', cat:'', prio:'', status:'', sort:'cat' };
+let ui={ view:'inicio', listTab:'lista', q:'', cat:'', prio:'', status:'', sort:'cat', focus:'' };
+const CARO=800;   // limite "item caro" para o insight (ajustável)
 let editingId=null, pendingImport=null;
 
 const LIST_CFG={
@@ -937,7 +948,7 @@ function listViewHTML(){
     </div>`;
   }
   if(!L.items.length) return head+emptyHTML();
-  return head + dashboardHTML() + categoriesHTML()
+  return head + dashboardHTML() + insightsHTML() + categoriesHTML()
     + toolbarHTML() + `<div id="listArea">` + listHTML() + `</div>`;
 }
 function setFesta(v){ state.cha.festaDate=v; persist(); render(); }
@@ -1010,14 +1021,48 @@ function toolbarHTML(){
     ${anyFilter()?`<button class="btn btn-ghost btn-sm" onclick="clearFilters()">✕ Limpar filtros</button>`:''}
   </div>`;
 }
-function anyFilter(){ return !!(ui.q||ui.cat||ui.prio||ui.status); }
-function clearFilters(){ ui.q=''; ui.cat=''; ui.prio=''; ui.status=''; render(); setTimeout(()=>{const s=document.getElementById('searchBox'); if(s)s.focus();},30); }
+function anyFilter(){ return !!(ui.q||ui.cat||ui.prio||ui.status||ui.focus); }
+function clearFilters(){ ui.q=''; ui.cat=''; ui.prio=''; ui.status=''; ui.focus=''; render(); setTimeout(()=>{const s=document.getElementById('searchBox'); if(s)s.focus();},30); }
 function renderListArea(){ const a=document.getElementById('listArea'); if(a) a.innerHTML=listHTML(); else render(); }
+
+/* ---------- Insights / foco rápido ---------- */
+function matchFocus(it,key){
+  if(it.comprado) return false;                 // insights são sobre o que falta
+  const today=startToday(), d=parseDate(it.comprarQuando);
+  switch(key){
+    case 'atrasado':    return !!d && daysBetween(d,today)<0;
+    case 'semana':      { if(!d) return false; const n=daysBetween(d,today); return n>=0&&n<=7; }
+    case 'altapendente':return it.prioridade==='alta';
+    case 'caro':        return (Number(it.precoEstimado)||0)>=CARO;
+    case 'sempreco':    return !(Number(it.precoEstimado)||0);
+    default: return true;
+  }
+}
+function insights(){
+  const items=LD().items, n=k=>items.filter(i=>matchFocus(i,k)).length, out=[];
+  if(n('atrasado'))     out.push({key:'atrasado',icon:'🔴',cls:'ins-danger',c:n('atrasado'),label:`${n('atrasado')>1?'itens atrasados precisam':'item atrasado precisa'} de atenção`});
+  if(n('semana'))       out.push({key:'semana',icon:'⏰',cls:'ins-warn',c:n('semana'),label:`pra comprar nesta semana`});
+  if(n('altapendente')) out.push({key:'altapendente',icon:'🔥',cls:'ins-warn',c:n('altapendente'),label:`de alta prioridade ainda ${n('altapendente')>1?'faltam':'falta'}`});
+  const caros=items.filter(i=>matchFocus(i,'caro'));
+  if(caros.length){ const tot=caros.reduce((s,i)=>s+subtotal(i),0); out.push({key:'caro',icon:'💸',cls:'ins-info',c:caros.length,label:`${caros.length>1?'itens acima':'item acima'} de ${fmtBRL(CARO)} pra comprar`,sub:fmtBRL(tot)}); }
+  if(n('sempreco'))     out.push({key:'sempreco',icon:'❓',cls:'ins-muted',c:n('sempreco'),label:`sem preço estimado`});
+  return out;
+}
+function insightsHTML(){
+  const arr=insights();
+  if(!arr.length) return `<div class="panel" style="display:flex;align-items:center;gap:10px;color:var(--ok)"><span style="font-size:1.3rem">✅</span><b>Tudo em dia!</b> <span style="color:var(--muted);font-weight:500">nenhum item atrasado ou urgente pendente.</span></div>`;
+  return `<div class="insights">`+arr.map(a=>
+    `<button class="ins-chip ${a.cls} ${ui.focus===a.key?'on':''}" onclick="setFocus('${a.key}')" title="Clique para filtrar">
+       <span class="ic">${a.icon}</span><b>${a.c}</b><span class="txt">${a.label}${a.sub?` · <b>${a.sub}</b>`:''}</span></button>`
+  ).join('')+`</div>`;
+}
+function setFocus(k){ ui.focus=(ui.focus===k?'':k); render(); animateView(); }
 function filteredItems(){
   let arr=LD().items.slice(); const q=norm(ui.q);
   if(q) arr=arr.filter(i=>norm(i.item).includes(q)||norm(i.categoria).includes(q)||norm(i.presentePor).includes(q));
   if(ui.cat) arr=arr.filter(i=>i.categoria===ui.cat);
   if(ui.prio) arr=arr.filter(i=>i.prioridade===ui.prio);
+  if(ui.focus) arr=arr.filter(i=>matchFocus(i,ui.focus));
   if(ui.status==='falta') arr=arr.filter(i=>!i.comprado);
   if(ui.status==='ok') arr=arr.filter(i=>i.comprado);
   const pr={alta:0,media:1,baixa:2};

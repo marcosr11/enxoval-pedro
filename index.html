@@ -116,10 +116,21 @@
   .search::before{content:"🔍";position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:.85rem;opacity:.6}
   select.filter{padding:10px 12px;border:1px solid var(--linha);border-radius:11px;font:inherit;background:var(--inp);color:var(--txt)}
 
-  .tablewrap{background:var(--card);border-radius:18px;box-shadow:var(--sombra);overflow:hidden}
-  table{width:100%;border-collapse:collapse}
+  .tablewrap{background:var(--card);border-radius:18px;box-shadow:var(--sombra)}
+  table{width:100%;border-collapse:separate;border-spacing:0}
   thead th{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-align:left;
-    padding:13px 12px;background:var(--th-head);border-bottom:1px solid var(--linha);font-weight:700;white-space:nowrap}
+    padding:13px 12px;background:var(--th-head);border-bottom:1px solid var(--linha);font-weight:700;white-space:nowrap;
+    position:sticky;top:0;z-index:6;box-shadow:0 6px 12px -8px rgba(0,0,0,.22)}
+  thead th:first-child{border-top-left-radius:18px}
+  thead th:last-child{border-top-right-radius:18px}
+  tbody tr:last-child td:first-child{border-bottom-left-radius:18px}
+  tbody tr:last-child td:last-child{border-bottom-right-radius:18px}
+  td.subtotal{color:var(--muted);font-weight:600}
+  .money-in{position:relative;display:inline-block}
+  .money-in > i{position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:.74rem;color:var(--muted);font-style:normal;font-weight:600;pointer-events:none}
+  .money-in > input{padding-left:26px}
+  .cellinput.money.has-val{font-weight:800;color:var(--txt)}
+  .cellinput.money.paid{color:var(--ok)}
   tbody td{padding:11px 12px;border-bottom:1px solid var(--linha);font-size:.9rem;vertical-align:middle}
   tbody tr:last-child td{border-bottom:none}
   tbody tr.done{background:var(--done-bg)}
@@ -518,7 +529,7 @@
    Hoje: localStorage. Para hospedar/sincronizar online, troque
    só estas duas funções por chamadas fetch() a um backend.
    ============================================================ */
-const BUILD='0622-duplicar';         // marcador de versão (pra confirmar deploy/cache)
+const BUILD='0623-tabela';         // marcador de versão (pra confirmar deploy/cache)
 const STORAGE_KEY='enxoval-bebe-v1';   // mantém a chave; migramos a forma por dentro
 const DOC_ID='pedro';                  // documento compartilhado do casal na nuvem
 const SUPA=(window.SUPA||{url:'',anonKey:''});
@@ -1038,10 +1049,10 @@ function listHTML(){
       <td><span class="badge b-${p}">${p[0].toUpperCase()+p.slice(1)}</span></td>
       <td class="num">${it.qtdAlvo||'—'}</td>
       <td class="num">${it.precoEstimado?fmtBRL(it.precoEstimado):'—'}</td>
-      <td class="num"><b>${subtotal(it)?fmtBRL(subtotal(it)):'—'}</b></td>
+      <td class="num subtotal">${subtotal(it)?fmtBRL(subtotal(it)):'—'}</td>
       <td>${whenBadge(it)}</td>
       <td class="num"><input class="cellinput qty" type="number" min="0" value="${it.qtdComprada||''}" placeholder="0" onchange="updField('${it.id}','qtdComprada',this.value)"></td>
-      <td class="num"><input class="cellinput money" type="number" min="0" step="0.01" value="${it.valorReal||''}" placeholder="0,00" onchange="updField('${it.id}','valorReal',this.value)"></td>
+      <td class="num"><span class="money-in"><i>R$</i><input class="cellinput money ${it.valorReal?(it.comprado?'has-val paid':'has-val'):''}" type="number" min="0" step="0.01" value="${it.valorReal||''}" placeholder="0,00" onchange="updField('${it.id}','valorReal',this.value)"></span></td>
       <td style="white-space:nowrap"><button class="btn btn-icon" onclick="duplicateItem('${it.id}')" title="Duplicar">⧉</button><button class="btn btn-icon" onclick="openItemModal('${it.id}')" title="Editar">✏️</button></td></tr>`;
   }).join('');
   const desktop=`<div class="tablewrap desktop-table"><table><thead><tr>
@@ -1054,10 +1065,10 @@ function listHTML(){
         <div class="mc-title"><div class="itemname" onclick="openItemModal('${it.id}')">${esc(it.item||'—')}</div>
           <div class="mc-meta">${it.categoria?`<span class="badge b-cat">${esc(it.categoria)}</span>`:''}<span class="badge b-${p}">${p[0].toUpperCase()+p.slice(1)}</span>${whenBadge(it)}${ind(it)}</div></div>
         <button class="btn btn-icon" onclick="duplicateItem('${it.id}')" title="Duplicar">⧉</button><button class="btn btn-icon" onclick="openItemModal('${it.id}')">✏️</button></div>
-      <div class="mc-meta" style="margin-top:8px;color:var(--muted);font-size:.84rem">Alvo ${it.qtdAlvo||0} · ${it.precoEstimado?fmtBRL(it.precoEstimado)+'/un':'sem preço'} · Subtotal <b>${fmtBRL(subtotal(it))}</b></div>
+      <div class="mc-meta" style="margin-top:8px;color:var(--muted);font-size:.84rem">Alvo ${it.qtdAlvo||0} · ${it.precoEstimado?fmtBRL(it.precoEstimado)+'/un':'sem preço'} · Subtotal ${fmtBRL(subtotal(it))}</div>
       <div class="mc-grid">
         <div><label>Qtd</label><input class="cellinput qty" style="max-width:none" type="number" min="0" value="${it.qtdComprada||''}" placeholder="0" onchange="updField('${it.id}','qtdComprada',this.value)"></div>
-        <div><label>Valor pago</label><input class="cellinput money" style="max-width:none" type="number" min="0" step="0.01" value="${it.valorReal||''}" placeholder="0,00" onchange="updField('${it.id}','valorReal',this.value)"></div></div></div>`;
+        <div><label>Valor pago</label><span class="money-in" style="display:block;width:100%"><i>R$</i><input class="cellinput money ${it.valorReal?(it.comprado?'has-val paid':'has-val'):''}" style="max-width:none;padding-left:27px" type="number" min="0" step="0.01" value="${it.valorReal||''}" placeholder="0,00" onchange="updField('${it.id}','valorReal',this.value)"></span></div></div></div>`;
   }).join('');
   return countBar+desktop+`<div class="mobile-list">${cards}</div>`;
 }

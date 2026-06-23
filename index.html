@@ -93,7 +93,7 @@
   .ins-chip b{font-weight:800}
   .ins-chip .txt{color:var(--txt);font-weight:600}
   .ins-chip.on{border-color:currentColor;background:color-mix(in srgb,currentColor 12%,var(--card))}
-  .ins-danger{color:var(--perigo)} .ins-warn{color:var(--aviso)} .ins-info{color:var(--azul-esc)} .ins-muted{color:var(--muted)}
+  .ins-danger{color:var(--perigo)} .ins-warn{color:var(--aviso)} .ins-info{color:var(--azul-esc)} .ins-money{color:#7c5cff} .ins-muted{color:var(--muted)}
   .budget-row{display:flex;align-items:center;gap:6px;margin-top:2px}
   .budget-row input{width:120px;border:1px solid var(--linha);background:var(--inp);color:var(--txt);
     border-radius:8px;padding:5px 8px;font:inherit;font-weight:700;font-size:1rem}
@@ -540,7 +540,7 @@
    Hoje: localStorage. Para hospedar/sincronizar online, troque
    só estas duas funções por chamadas fetch() a um backend.
    ============================================================ */
-const BUILD='0623-insights';         // marcador de versão (pra confirmar deploy/cache)
+const BUILD='0623-insights2';         // marcador de versão (pra confirmar deploy/cache)
 const STORAGE_KEY='enxoval-bebe-v1';   // mantém a chave; migramos a forma por dentro
 const DOC_ID='pedro';                  // documento compartilhado do casal na nuvem
 const SUPA=(window.SUPA||{url:'',anonKey:''});
@@ -1026,12 +1026,25 @@ function clearFilters(){ ui.q=''; ui.cat=''; ui.prio=''; ui.status=''; ui.focus=
 function renderListArea(){ const a=document.getElementById('listArea'); if(a) a.innerHTML=listHTML(); else render(); }
 
 /* ---------- Insights / foco rápido ---------- */
+const MESES=['janeiro','fevereiro','marco','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+/* tenta achar o mês-alvo do "comprar quando": data real, ou nome de mês.
+   Em intervalos como "Maio-Junho", usa o ÚLTIMO mês escrito (Junho). */
+function targetMonthInfo(txt){
+  const d=parseDate(txt);
+  if(d) return {month:d.getMonth(), year:d.getFullYear()};
+  const t=norm(txt); if(!t) return null;
+  let bi=-1, bp=-1;
+  MESES.forEach((m,i)=>{ const p=t.lastIndexOf(m); if(p>bp){ bp=p; bi=i; } });
+  return bi>=0 ? {month:bi, year:null} : null;
+}
 function matchFocus(it,key){
   if(it.comprado) return false;                 // insights são sobre o que falta
   const today=startToday(), d=parseDate(it.comprarQuando);
   switch(key){
     case 'atrasado':    return !!d && daysBetween(d,today)<0;
     case 'semana':      { if(!d) return false; const n=daysBetween(d,today); return n>=0&&n<=7; }
+    case 'mes':         { const info=targetMonthInfo(it.comprarQuando); if(!info) return false;
+                          return info.year!=null ? (info.month===today.getMonth() && info.year===today.getFullYear()) : info.month===today.getMonth(); }
     case 'altapendente':return it.prioridade==='alta';
     case 'caro':        return (Number(it.precoEstimado)||0)>=CARO;
     case 'sempreco':    return !(Number(it.precoEstimado)||0);
@@ -1042,9 +1055,10 @@ function insights(){
   const items=LD().items, n=k=>items.filter(i=>matchFocus(i,k)).length, out=[];
   if(n('atrasado'))     out.push({key:'atrasado',icon:'🔴',cls:'ins-danger',c:n('atrasado'),label:`${n('atrasado')>1?'itens atrasados precisam':'item atrasado precisa'} de atenção`});
   if(n('semana'))       out.push({key:'semana',icon:'⏰',cls:'ins-warn',c:n('semana'),label:`pra comprar nesta semana`});
+  if(n('mes'))          out.push({key:'mes',icon:'🗓️',cls:'ins-info',c:n('mes'),label:`${n('mes')>1?'itens vencem':'item vence'} neste mês`});
   if(n('altapendente')) out.push({key:'altapendente',icon:'🔥',cls:'ins-warn',c:n('altapendente'),label:`de alta prioridade ainda ${n('altapendente')>1?'faltam':'falta'}`});
   const caros=items.filter(i=>matchFocus(i,'caro'));
-  if(caros.length){ const tot=caros.reduce((s,i)=>s+subtotal(i),0); out.push({key:'caro',icon:'💸',cls:'ins-info',c:caros.length,label:`${caros.length>1?'itens acima':'item acima'} de ${fmtBRL(CARO)} pra comprar`,sub:fmtBRL(tot)}); }
+  if(caros.length){ const tot=caros.reduce((s,i)=>s+subtotal(i),0); out.push({key:'caro',icon:'💸',cls:'ins-money',c:caros.length,label:`${caros.length>1?'itens acima':'item acima'} de ${fmtBRL(CARO)} pra comprar`,sub:fmtBRL(tot)}); }
   if(n('sempreco'))     out.push({key:'sempreco',icon:'❓',cls:'ins-muted',c:n('sempreco'),label:`sem preço estimado`});
   return out;
 }

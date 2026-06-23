@@ -140,6 +140,7 @@
   .cellinput{width:100%;border:1px solid transparent;border-radius:8px;padding:6px 7px;font:inherit;background:var(--inp);color:var(--txt)}
   .cellinput:hover{border-color:var(--azul-bb)}
   .cellinput.money,.cellinput.qty{text-align:right;max-width:96px}
+  .cellinput.money{max-width:132px}
   .check{width:22px;height:22px;accent-color:var(--ok);cursor:pointer}
 
   .badge{display:inline-block;padding:3px 9px;border-radius:99px;font-size:.74rem;font-weight:700}
@@ -529,7 +530,7 @@
    Hoje: localStorage. Para hospedar/sincronizar online, troque
    só estas duas funções por chamadas fetch() a um backend.
    ============================================================ */
-const BUILD='0623-tabela';         // marcador de versão (pra confirmar deploy/cache)
+const BUILD='0623-tabela2';         // marcador de versão (pra confirmar deploy/cache)
 const STORAGE_KEY='enxoval-bebe-v1';   // mantém a chave; migramos a forma por dentro
 const DOC_ID='pedro';                  // documento compartilhado do casal na nuvem
 const SUPA=(window.SUPA||{url:'',anonKey:''});
@@ -649,6 +650,7 @@ const IMPORTABLE=FIELDS.filter(f=>f.key!=='_subtotal');
 const norm=s=>(s==null?'':String(s)).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();
 const uid=()=>'i'+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);
 const fmtBRL=n=>(Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const fmtNum2=n=>(Number(n)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const MS=86400000;
 function startToday(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
 function daysBetween(a,b){ return Math.round((a-b)/MS); }
@@ -1052,7 +1054,7 @@ function listHTML(){
       <td class="num subtotal">${subtotal(it)?fmtBRL(subtotal(it)):'—'}</td>
       <td>${whenBadge(it)}</td>
       <td class="num"><input class="cellinput qty" type="number" min="0" value="${it.qtdComprada||''}" placeholder="0" onchange="updField('${it.id}','qtdComprada',this.value)"></td>
-      <td class="num"><span class="money-in"><i>R$</i><input class="cellinput money ${it.valorReal?(it.comprado?'has-val paid':'has-val'):''}" type="number" min="0" step="0.01" value="${it.valorReal||''}" placeholder="0,00" onchange="updField('${it.id}','valorReal',this.value)"></span></td>
+      <td class="num"><span class="money-in"><i>R$</i><input class="cellinput money ${it.valorReal?(it.comprado?'has-val paid':'has-val'):''}" inputmode="decimal" value="${it.valorReal?esc(fmtNum2(it.valorReal)):''}" placeholder="0,00" onchange="updField('${it.id}','valorReal',this.value)"></span></td>
       <td style="white-space:nowrap"><button class="btn btn-icon" onclick="duplicateItem('${it.id}')" title="Duplicar">⧉</button><button class="btn btn-icon" onclick="openItemModal('${it.id}')" title="Editar">✏️</button></td></tr>`;
   }).join('');
   const desktop=`<div class="tablewrap desktop-table"><table><thead><tr>
@@ -1068,7 +1070,7 @@ function listHTML(){
       <div class="mc-meta" style="margin-top:8px;color:var(--muted);font-size:.84rem">Alvo ${it.qtdAlvo||0} · ${it.precoEstimado?fmtBRL(it.precoEstimado)+'/un':'sem preço'} · Subtotal ${fmtBRL(subtotal(it))}</div>
       <div class="mc-grid">
         <div><label>Qtd</label><input class="cellinput qty" style="max-width:none" type="number" min="0" value="${it.qtdComprada||''}" placeholder="0" onchange="updField('${it.id}','qtdComprada',this.value)"></div>
-        <div><label>Valor pago</label><span class="money-in" style="display:block;width:100%"><i>R$</i><input class="cellinput money ${it.valorReal?(it.comprado?'has-val paid':'has-val'):''}" style="max-width:none;padding-left:27px" type="number" min="0" step="0.01" value="${it.valorReal||''}" placeholder="0,00" onchange="updField('${it.id}','valorReal',this.value)"></span></div></div></div>`;
+        <div><label>Valor pago</label><span class="money-in" style="display:block;width:100%"><i>R$</i><input class="cellinput money ${it.valorReal?(it.comprado?'has-val paid':'has-val'):''}" style="max-width:none;padding-left:27px" inputmode="decimal" value="${it.valorReal?esc(fmtNum2(it.valorReal)):''}" placeholder="0,00" onchange="updField('${it.id}','valorReal',this.value)"></span></div></div></div>`;
   }).join('');
   return countBar+desktop+`<div class="mobile-list">${cards}</div>`;
 }
